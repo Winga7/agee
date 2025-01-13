@@ -3,20 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\Evaluation;
-use App\Models\Module;
+use App\Models\EvaluationToken;
+use App\Services\AIService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EvaluationInvitation;
+use App\Models\CourseEnrollment;
 
 class EvaluationController extends Controller
 {
+    private $aiService;
+
+    public function __construct(AIService $aiService)
+    {
+        $this->aiService = $aiService;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        // On récupère toutes les évaluations avec le module associé
-        // (et l’utilisateur si on a un user_id, à voir selon l’anonymisation)
-        $evaluations = Evaluation::with('module')->get();
+        $evaluations = Evaluation::with('module.professor')
+            ->latest()
+            ->get();
 
         return Inertia::render('Evaluations/Index', [
             'evaluations' => $evaluations
@@ -28,12 +39,8 @@ class EvaluationController extends Controller
      */
     public function create()
     {
-        // Liste des modules pour que l’utilisateur choisisse
-        // ou bien on fait l’évaluation depuis la page du module
-        $modules = Module::all();
-
         return Inertia::render('Evaluations/Create', [
-            'modules' => $modules,
+            'modules' => \App\Models\Module::with('professor')->get()
         ]);
     }
 
@@ -42,22 +49,28 @@ class EvaluationController extends Controller
      */
     public function store(Request $request)
     {
-        // Selon l’anonymisation, on ne stocke pas user_id, ou on le crypte...
-        $request->validate([
+        $validated = $request->validate([
             'module_id' => 'required|exists:modules,id',
-            'score'     => 'required|integer|between:1,5',
-            'comment'   => 'nullable|string',
+            'score' => 'required|integer|between:1,5',
+            'comment' => 'nullable|string|max:1000',
         ]);
 
+        // Anonymisation du commentaire via notre service
+        if (!empty($validated['comment'])) {
+            $anonymizedComment = $this->aiService->anonymizeComment($validated['comment']);
+        }
+
         Evaluation::create([
-            'module_id' => $request->module_id,
-            'score'     => $request->score,
-            'comment'   => $request->comment,
-            // 'user_id' => Auth::id(), // si besoin de lier à l’utilisateur
+            'module_id' => $validated['module_id'],
+            'score' => $validated['score'],
+            'original_comment' => $validated['comment'] ?? null,
+            'anonymized_comment' => $anonymizedComment ?? null,
+            'is_anonymized' => !empty($anonymizedComment),
+            'user_hash' => hash('sha256', auth()->id() . $validated['module_id'] . env('APP_KEY'))
         ]);
 
         return to_route('evaluations.index')
-            ->with('success', 'Évaluation créée avec succès !');
+            ->with('success', 'Votre évaluation a été enregistrée avec succès.');
     }
 
     /**
@@ -65,10 +78,9 @@ class EvaluationController extends Controller
      */
     public function show(Evaluation $evaluation)
     {
-        $evaluation->load('module');
-
+        // On ne montre que le commentaire anonymisé
         return Inertia::render('Evaluations/Show', [
-            'evaluation' => $evaluation,
+            'evaluation' => $evaluation->load('module.professor')
         ]);
     }
 
@@ -116,5 +128,35 @@ class EvaluationController extends Controller
 
         return to_route('evaluations.index')
             ->with('success', 'Évaluation supprimée avec succès !');
+    }
+
+    public function generateTokensForGroup(Request $request)
+    {
+        $request->validate([
+            'module_id' => 'required|exists:modules,id',
+            'class_group' => 'required|string',
+        ]);
+
+        // Récupérer tous les élèves inscrits à ce module dans ce groupe
+        $enrollments = CourseEnrollment::where('module_id', $request->module_id)
+            ->where('class_group', $request->class_group)
+            ->where('end_date', '<=', now()) // Le cours doit être terminé
+            ->with('user')
+            ->get();
+
+        foreach ($enrollments as $enrollment) {
+            // Créer un token unique pour chaque élève
+            $token = EvaluationToken::create([
+                'token' => EvaluationToken::generateToken(),
+                'module_id' => $request->module_id,
+                'expires_at' => now()->addMinutes(10),
+                'user_email' => $enrollment->user->email
+            ]);
+
+            // Envoyer l'email avec le lien d'évaluation
+            Mail::to($enrollment->user->email)->send(new EvaluationInvitation($token));
+        }
+
+        return back()->with('success', 'Les invitations ont été envoyées avec succès.');
     }
 }

@@ -10,11 +10,25 @@ class Evaluation extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'user_hash',
         'module_id',
         'score',
-        'comment',
+        'original_comment',
+        'anonymized_comment',
+        'is_anonymized'
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($evaluation) {
+            if (auth()->check()) {
+                // Création d'un hash unique pour l'utilisateur et le module
+                $evaluation->user_hash = hash('sha256', auth()->id() . env('APP_KEY'));
+            }
+        });
+    }
 
     // Relation avec le module
     public function module()
@@ -22,9 +36,6 @@ class Evaluation extends Model
         return $this->belongsTo(Module::class);
     }
 
-    // Optionnel : Relation avec l'utilisateur
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+    // Ne jamais exposer le commentaire original
+    protected $hidden = ['original_comment', 'user_hash'];
 }

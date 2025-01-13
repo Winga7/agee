@@ -16,6 +16,7 @@
     -   Menu principal dans `AppLayout.vue`
     -   Menu mobile (hamburger) dans la section responsive
     -   Les composants `NavLink` et `ResponsiveNavLink` correspondants
+    -   N'emploie plus jamais Kernel
 
 ### 2. Layouts
 
