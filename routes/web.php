@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\EvaluationController;
+use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\ProfessorController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -12,6 +15,14 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
+// Modules
+Route::resource('modules', ModuleController::class);
+
+// Evaluations
+Route::resource('evaluations', EvaluationController::class);
+
+// Professors
+Route::resource('professors', ProfessorController::class);
 
 Route::middleware([
     'auth:sanctum',
