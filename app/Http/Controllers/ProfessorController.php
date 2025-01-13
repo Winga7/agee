@@ -4,8 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Professor;
 use Illuminate\Http\Request;
-use Inertia\Inertia; // important pour retourner des vues Inertia
-use Redirect;       // pour rediriger après les actions
+use Inertia\Inertia;
 
 class ProfessorController extends Controller
 {
@@ -35,7 +34,7 @@ class ProfessorController extends Controller
         ]);
 
         Professor::create($request->all());
-        return Redirect::route('professors.index');
+        return to_route('professors.index');
     }
 
     // Afficher un professeur (optionnel, selon tes besoins)
@@ -65,13 +64,13 @@ class ProfessorController extends Controller
         ]);
 
         $professor->update($request->all());
-        return Redirect::route('professors.index');
+        return to_route('professors.index');
     }
 
     // Supprimer un professeur
     public function destroy(Professor $professor)
     {
         $professor->delete();
-        return Redirect::route('professors.index');
+        return to_route('professors.index');
     }
 }
