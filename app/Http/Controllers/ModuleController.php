@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Module;
 use App\Models\Professor;
+use App\Models\CourseEnrollment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -104,5 +105,27 @@ class ModuleController extends Controller
 
         return to_route('modules.index')
             ->with('success', 'Module supprimé avec succès !');
+    }
+
+    public function getGroups(Module $module)
+    {
+        // Récupérer tous les groupes distincts pour ce module
+        $groups = CourseEnrollment::where('module_id', $module->id)
+            ->select('class_group')
+            ->distinct()
+            ->get()
+            ->pluck('class_group');
+
+        // Récupérer tous les étudiants pour ce module, groupés par classe
+        $students = CourseEnrollment::where('module_id', $module->id)
+            ->with('student')
+            ->get()
+            ->unique('student_id') // Éviter les doublons d'étudiants
+            ->groupBy('class_group');
+
+        return response()->json([
+            'groups' => $groups,
+            'students' => $students
+        ]);
     }
 }

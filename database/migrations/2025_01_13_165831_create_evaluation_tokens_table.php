@@ -13,16 +13,16 @@ return new class extends Migration
     {
         Schema::create('evaluation_tokens', function (Blueprint $table) {
             $table->id();
-            $table->string('token', 64)->unique();
-            $table->unsignedBigInteger('module_id');
-            $table->foreign('module_id')->references('id')->on('modules')->onDelete('cascade');
+            $table->string('token')->unique();
+            $table->foreignId('module_id')->constrained();
             $table->string('student_email');
+            $table->string('class_group');
+            $table->dateTime('expires_at');
             $table->boolean('is_used')->default(false);
-            $table->timestamp('expires_at');
             $table->timestamps();
 
-            // Un étudiant ne peut avoir qu'un seul token actif par module
-            $table->unique(['student_email', 'module_id', 'is_used']);
+            // Ajouter directement la contrainte unique sur student_email et module_id
+            $table->unique(['student_email', 'module_id'], 'unique_active_token');
         });
     }
 

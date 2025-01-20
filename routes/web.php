@@ -38,6 +38,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });
 
     Route::get('/api/dashboard/stats', [DashboardController::class, 'getFilteredStats']);
+    // Ajouter dans le groupe middleware auth
+    Route::get('/api/modules/{module}/groups', [ModuleController::class, 'getGroups']);
 });
 
 // Routes publiques pour les évaluations par token

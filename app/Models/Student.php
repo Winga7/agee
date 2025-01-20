@@ -24,4 +24,9 @@ class Student extends Model
     {
         return $this->hasMany(CourseEnrollment::class);
     }
+
+    public function evaluationTokens()
+    {
+        return $this->hasMany(EvaluationToken::class, 'student_email', 'email');
+    }
 }
