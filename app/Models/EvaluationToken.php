@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class EvaluationToken extends Model
 {
@@ -11,6 +12,7 @@ class EvaluationToken extends Model
         'token',
         'module_id',
         'student_email',
+        'class_group',
         'is_used',
         'expires_at'
     ];
@@ -25,13 +27,29 @@ class EvaluationToken extends Model
         return $this->belongsTo(Module::class);
     }
 
-    public static function generateToken(): string
+    public static function generateToken()
     {
         return Str::random(64);
     }
 
+    public function isExpired(): bool
+    {
+        return Carbon::parse($this->expires_at)->isPast();
+    }
+
     public function isValid(): bool
     {
-        return !$this->is_used && $this->expires_at->isFuture();
+        return !$this->is_used && !$this->isExpired();
+    }
+
+    public function getStatus(): string
+    {
+        if ($this->is_used) {
+            return 'completed';  // Questionnaire rempli
+        }
+        if ($this->isExpired()) {
+            return 'expired';    // Token expiré sans réponse
+        }
+        return 'pending';       // En attente de réponse
     }
 }
