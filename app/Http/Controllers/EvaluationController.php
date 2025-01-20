@@ -10,6 +10,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EvaluationInvitation;
 use App\Models\CourseEnrollment;
+use App\Models\Module;
 
 class EvaluationController extends Controller
 {
@@ -25,12 +26,8 @@ class EvaluationController extends Controller
      */
     public function index()
     {
-        $evaluations = Evaluation::with('module.professor')
-            ->latest()
-            ->get();
-
         return Inertia::render('Evaluations/Index', [
-            'evaluations' => $evaluations
+            'evaluations' => Evaluation::with('module.professor')->get()
         ]);
     }
 
@@ -141,7 +138,7 @@ class EvaluationController extends Controller
         $enrollments = CourseEnrollment::where('module_id', $request->module_id)
             ->where('class_group', $request->class_group)
             ->where('end_date', '<=', now()) // Le cours doit être terminé
-            ->with('user')
+            ->with('student')
             ->get();
 
         foreach ($enrollments as $enrollment) {
@@ -150,13 +147,23 @@ class EvaluationController extends Controller
                 'token' => EvaluationToken::generateToken(),
                 'module_id' => $request->module_id,
                 'expires_at' => now()->addMinutes(10),
-                'user_email' => $enrollment->user->email
+                'student_email' => $enrollment->student->email
             ]);
 
             // Envoyer l'email avec le lien d'évaluation
-            Mail::to($enrollment->user->email)->send(new EvaluationInvitation($token));
+            Mail::to($enrollment->student->email)->send(new EvaluationInvitation($token));
         }
 
         return back()->with('success', 'Les invitations ont été envoyées avec succès.');
+    }
+
+    public function manage()
+    {
+        return Inertia::render('Evaluations/Manage', [
+            'modules' => Module::with('professor')->get(),
+            'sentTokens' => EvaluationToken::with('module')
+                ->orderBy('created_at', 'desc')
+                ->get()
+        ]);
     }
 }

@@ -71,6 +71,7 @@ class DatabaseSeeder extends Seeder
         // Autres seeders pour les modules
         $this->call([
             ModuleSeeder::class,
+            CourseEnrollmentSeeder::class,
         ]);
     }
 }

@@ -17,14 +17,11 @@ class EvaluationInvitation extends Mailable
 
     public function build()
     {
-        $evaluationUrl = route('evaluations.create-with-token', $this->token->token);
-
         return $this->markdown('emails.evaluation-invitation')
-            ->subject('Invitation à évaluer votre cours')
             ->with([
                 'moduleName' => $this->token->module->title,
-                'evaluationUrl' => $evaluationUrl,
-                'expiresAt' => $this->token->expires_at->format('d/m/Y')
+                'evaluationUrl' => route('evaluations.create-with-token', $this->token->token),
+                'expiresAt' => $this->token->expires_at->format('d/m/Y H:i')
             ]);
     }
 }

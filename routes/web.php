@@ -15,16 +15,28 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
-// Modules
-Route::resource('modules', ModuleController::class);
 
-// Evaluations - Protégées par authentification
+// Routes protégées par authentification
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
-    Route::resource('evaluations', EvaluationController::class);
+    // Dashboard
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
 
-    // Route optionnelle pour vérifier si un utilisateur a déjà évalué un module
-    Route::get('/evaluations/check/{module}', [EvaluationController::class, 'checkUserEvaluation'])
-        ->name('evaluations.check');
+    // Modules
+    Route::resource('modules', ModuleController::class);
+
+    // Professors
+    Route::resource('professors', ProfessorController::class);
+
+    // Routes pour le pédagogue uniquement
+    Route::middleware(['role:pedagogue'])->group(function () {
+        Route::get('/evaluations/manage', [EvaluationController::class, 'manage'])
+            ->name('evaluations.manage');
+        Route::post('/evaluations/generate-tokens', [EvaluationController::class, 'generateTokensForGroup'])
+            ->name('evaluations.generate-tokens');
+        Route::resource('evaluations', EvaluationController::class);
+    });
 });
 
 // Routes publiques pour les évaluations par token
@@ -32,24 +44,3 @@ Route::get('/evaluate/{token}', [EvaluationController::class, 'createWithToken']
     ->name('evaluations.create-with-token');
 Route::post('/evaluate/{token}', [EvaluationController::class, 'store'])
     ->name('evaluations.store-with-token');
-
-// Routes protégées pour l'administration des évaluations
-Route::middleware(['auth:sanctum', 'verified', 'role:pedagogue'])->group(function () {
-    Route::get('/evaluations/manage', [EvaluationController::class, 'manage'])
-        ->name('evaluations.manage');
-    Route::post('/evaluations/generate-tokens/{module}', [EvaluationController::class, 'generateTokensForGroup'])
-        ->name('evaluations.generate-tokens');
-});
-
-// Professors
-Route::resource('professors', ProfessorController::class);
-
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
-});

@@ -3,11 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CourseEnrollment extends Model
 {
     protected $fillable = [
-        'user_id',
+        'student_id',
         'module_id',
         'start_date',
         'end_date',
@@ -19,12 +20,12 @@ class CourseEnrollment extends Model
         'end_date' => 'date'
     ];
 
-    public function user()
+    public function student(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Student::class);
     }
 
-    public function module()
+    public function module(): BelongsTo
     {
         return $this->belongsTo(Module::class);
     }

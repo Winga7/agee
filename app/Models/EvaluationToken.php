@@ -10,23 +10,24 @@ class EvaluationToken extends Model
     protected $fillable = [
         'token',
         'module_id',
+        'student_email',
         'is_used',
         'expires_at'
     ];
 
     protected $casts = [
-        'is_used' => 'boolean',
-        'expires_at' => 'datetime'
+        'expires_at' => 'datetime',
+        'is_used' => 'boolean'
     ];
-
-    public static function generateToken(): string
-    {
-        return Str::random(64);
-    }
 
     public function module()
     {
         return $this->belongsTo(Module::class);
+    }
+
+    public static function generateToken(): string
+    {
+        return Str::random(64);
     }
 
     public function isValid(): bool
