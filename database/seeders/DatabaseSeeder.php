@@ -19,5 +19,42 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Création du compte pédagogue
+        User::create([
+            'name' => 'Pédagogue',
+            'email' => 'pedagogue@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'pedagogue',
+        ]);
+
+        // Création des comptes professeurs
+        User::create([
+            'name' => 'John Doe',
+            'email' => 'john.doe@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'professor',
+        ]);
+
+        User::create([
+            'name' => 'Jane Smith',
+            'email' => 'jane.smith@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'professor',
+        ]);
+
+        // Création de quelques comptes étudiants
+        User::create([
+            'name' => 'Étudiant Test',
+            'email' => 'student@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'student',
+        ]);
+
+        // Autres seeders...
+        $this->call([
+            ProfessorSeeder::class,
+            ModuleSeeder::class,
+        ]);
     }
 }

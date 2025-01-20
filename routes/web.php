@@ -34,10 +34,10 @@ Route::post('/evaluate/{token}', [EvaluationController::class, 'store'])
     ->name('evaluations.store-with-token');
 
 // Routes protégées pour l'administration des évaluations
-Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+Route::middleware(['auth:sanctum', 'verified', 'role:pedagogue'])->group(function () {
     Route::get('/evaluations/manage', [EvaluationController::class, 'manage'])
         ->name('evaluations.manage');
-    Route::post('/evaluations/generate-tokens/{module}', [EvaluationController::class, 'generateTokens'])
+    Route::post('/evaluations/generate-tokens/{module}', [EvaluationController::class, 'generateTokensForGroup'])
         ->name('evaluations.generate-tokens');
 });
 
