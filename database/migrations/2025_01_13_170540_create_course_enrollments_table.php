@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('course_enrollments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('student_id')->constrained()->onDelete('cascade');
             $table->foreignId('module_id')->constrained()->onDelete('cascade');
             $table->date('start_date');
             $table->date('end_date');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Un élève ne peut être inscrit qu'une fois au même cours
-            $table->unique(['user_id', 'module_id']);
+            $table->unique(['student_id', 'module_id']);
         });
     }
 

@@ -13,7 +13,9 @@ class Professor extends Model
         'first_name',
         'last_name',
         'email',
-        'department',
+        'school_email',
+        'telephone',
+        'adress',
     ];
 
     // Relation un Professeur a plusieurs Modules
