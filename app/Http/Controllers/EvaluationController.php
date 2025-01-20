@@ -112,6 +112,7 @@ class EvaluationController extends Controller
             'module_id' => $request->module_id,
             'score'     => $request->score,
             'comment'   => $request->comment,
+            'status'    => 'completed'
         ]);
 
         return to_route('evaluations.index')

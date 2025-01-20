@@ -27,6 +27,7 @@ return new class extends Migration
             $table->text('original_comment')->nullable();
             $table->text('anonymized_comment')->nullable();
             $table->boolean('is_anonymized')->default(false);
+            $table->enum('status', ['pending', 'completed'])->default('pending');
 
             // Contrainte unique pour empêcher les doubles évaluations
             $table->unique(['user_hash', 'module_id']);

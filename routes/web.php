@@ -3,6 +3,7 @@
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ProfessorController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -19,9 +20,7 @@ Route::get('/', function () {
 // Routes protégées par authentification
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     // Dashboard
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
 
     // Modules
     Route::resource('modules', ModuleController::class);
@@ -38,6 +37,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::resource('evaluations', EvaluationController::class);
     });
 
+    Route::get('/api/dashboard/stats', [DashboardController::class, 'getFilteredStats']);
     // Ajouter dans le groupe middleware auth
     Route::get('/api/modules/{module}/groups', [ModuleController::class, 'getGroups']);
 });

@@ -15,7 +15,12 @@ class Evaluation extends Model
         'score',
         'original_comment',
         'anonymized_comment',
-        'is_anonymized'
+        'is_anonymized',
+        'status'
+    ];
+
+    protected $casts = [
+        'is_anonymized' => 'boolean',
     ];
 
     protected static function boot()
@@ -38,4 +43,15 @@ class Evaluation extends Model
 
     // Ne jamais exposer le commentaire original
     protected $hidden = ['original_comment', 'user_hash'];
+
+    public function markAsCompleted()
+    {
+        $this->status = 'completed';
+        $this->save();
+    }
+
+    public function isCompleted()
+    {
+        return $this->status === 'completed';
+    }
 }
