@@ -37,6 +37,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
             ->name('evaluations.generate-tokens');
         Route::resource('evaluations', EvaluationController::class);
     });
+
+    // Ajouter dans le groupe middleware auth
+    Route::get('/api/modules/{module}/groups', [ModuleController::class, 'getGroups']);
 });
 
 // Routes publiques pour les évaluations par token

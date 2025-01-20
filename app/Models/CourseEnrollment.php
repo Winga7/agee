@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CourseEnrollment extends Model
 {
@@ -28,5 +29,10 @@ class CourseEnrollment extends Model
     public function module(): BelongsTo
     {
         return $this->belongsTo(Module::class);
+    }
+
+    public function evaluationTokens(): HasMany
+    {
+        return $this->hasMany(EvaluationToken::class, 'student_email', 'student_email');
     }
 }

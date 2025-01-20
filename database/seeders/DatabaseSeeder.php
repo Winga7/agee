@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Professor;
+use App\Models\CourseEnrollment;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -72,6 +73,33 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ModuleSeeder::class,
             CourseEnrollmentSeeder::class,
+        ]);
+
+        // Après la création des étudiants et des modules
+        // Création des inscriptions aux cours
+        CourseEnrollment::create([
+            'student_id' => 1, // ID du premier étudiant (Jean Dupont)
+            'module_id' => 1,  // ID du premier module
+            'start_date' => '2023-09-01',
+            'end_date' => '2024-06-30',
+            'class_group' => 'Web Dev 2e année'
+        ]);
+
+        CourseEnrollment::create([
+            'student_id' => 2, // ID du deuxième étudiant (Marie Martin)
+            'module_id' => 1,  // ID du premier module
+            'start_date' => '2023-09-01',
+            'end_date' => '2024-06-30',
+            'class_group' => 'Web Dev 2e année'
+        ]);
+
+        // Vous pouvez ajouter d'autres inscriptions pour d'autres modules
+        CourseEnrollment::create([
+            'student_id' => 1,
+            'module_id' => 2,
+            'start_date' => '2023-09-01',
+            'end_date' => '2024-06-30',
+            'class_group' => 'Web Dev 2e année'
         ]);
     }
 }
