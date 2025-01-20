@@ -16,13 +16,15 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         User::factory()->create([
-            'name' => 'Test User',
+            'name' => 'User',
+            'firstname' => 'Test',
             'email' => 'test@example.com',
         ]);
 
         // Création du compte pédagogue
         User::create([
             'name' => 'Pédagogue',
+            'firstname' => 'Test',
             'email' => 'pedagogue@example.com',
             'password' => bcrypt('password'),
             'role' => 'pedagogue',
@@ -30,14 +32,16 @@ class DatabaseSeeder extends Seeder
 
         // Création des comptes professeurs
         User::create([
-            'name' => 'John Doe',
+            'name' => 'Professeur',
+            'firstname' => 'John',
             'email' => 'john.doe@example.com',
             'password' => bcrypt('password'),
             'role' => 'professor',
         ]);
 
         User::create([
-            'name' => 'Jane Smith',
+            'name' => 'Professeur',
+            'firstname' => 'Jane',
             'email' => 'jane.smith@example.com',
             'password' => bcrypt('password'),
             'role' => 'professor',
@@ -45,7 +49,8 @@ class DatabaseSeeder extends Seeder
 
         // Création de quelques comptes étudiants
         User::create([
-            'name' => 'Étudiant Test',
+            'name' => 'Étudiant',
+            'firstname' => 'Test',
             'email' => 'student@example.com',
             'password' => bcrypt('password'),
             'role' => 'student',
