@@ -19,9 +19,6 @@ return new class extends Migration
             $table->date('end_date');
             $table->string('class_group'); // ex: "Web Dev 2e année"
             $table->timestamps();
-
-            // Un élève ne peut être inscrit qu'une fois au même cours
-            $table->unique(['student_id', 'module_id']);
         });
     }
 
