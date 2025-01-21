@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('class_group');
             $table->dateTime('expires_at');
             $table->boolean('is_used')->default(false);
+            $table->timestamp('used_at')->nullable();
             $table->timestamps();
 
             // Ajouter directement la contrainte unique sur student_email et module_id

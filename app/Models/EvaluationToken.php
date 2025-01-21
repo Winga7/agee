@@ -14,7 +14,8 @@ class EvaluationToken extends Model
         'student_email',
         'class_group',
         'is_used',
-        'expires_at'
+        'expires_at',
+        'used_at'
     ];
 
     protected $casts = [
