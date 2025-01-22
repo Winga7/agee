@@ -23,6 +23,11 @@
 -   Utiliser `AppLayout.vue` comme layout principal
 -   Structure type d'une page :
 
+### 3. Format de reponse
+
+-   Prend le temps d'analyser correctement la question
+-   Donne moi TOUJOURS les liens vers les fichier ou tu me propose des modifications.
+
 ```vue
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
