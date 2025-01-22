@@ -13,7 +13,6 @@ class DashboardController extends Controller
     public function dashboard(Request $request)
     {
         $currentYear = date('Y');
-        // Si nous sommes entre janvier et août, l'année académique a commencé l'année précédente
         $currentAcademicYear = (date('n') >= 1 && date('n') <= 8) ? $currentYear - 1 : $currentYear;
         $years = range($currentAcademicYear - 2, $currentAcademicYear + 1);
         
@@ -27,29 +26,53 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function getFilteredStats(Request $request)
+    private function getFilteredStats(Request $request)
     {
         $year = $request->input('year');
         $moduleId = $request->input('module_id');
 
+        // Base query pour les évaluations
         $query = Evaluation::query();
 
+        // Filtre par année académique
         if ($year) {
             $startDate = "{$year}-09-01";
             $endDate = ($year + 1) . "-08-31";
             $query->whereBetween('created_at', [$startDate, $endDate]);
         }
 
+        // Filtre par module
         if ($moduleId) {
             $query->where('module_id', $moduleId);
         }
 
+        // Calcul des modules actifs (ayant au moins une évaluation)
+        $activeModules = Module::when($moduleId, function ($query) use ($moduleId) {
+            return $query->where('id', $moduleId);
+        })
+        ->when($year, function ($query) use ($year, $startDate, $endDate) {
+            return $query->whereHas('evaluations', function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate]);
+            });
+        })
+        ->count();
+
+        // Nombre total d'évaluations
+        $totalEvaluations = (clone $query)->count();
+
+        // Nombre d'évaluations complétées
+        $completedEvaluations = (clone $query)->where('status', 'completed')->count();
+
+        // Calcul du taux de participation
+        $participationRate = $totalEvaluations > 0 
+            ? round(($completedEvaluations / $totalEvaluations) * 100) 
+            : 0;
+
         return [
-            'totalModules' => $moduleId ? 1 : Module::whereHas('evaluations')->count(),
-            'totalEvaluations' => $query->count(),
-            'completedEvaluations' => (clone $query)->where('status', 'completed')->count(),
-            'averageScore' => round((clone $query)->where('status', 'completed')->avg('score'), 2) ?? 0,
-            'participationRate' => $this->calculateParticipationRate($moduleId, $year)
+            'totalModules' => $activeModules,
+            'totalEvaluations' => $totalEvaluations,
+            'completedEvaluations' => $completedEvaluations,
+            'participationRate' => $participationRate
         ];
     }
 

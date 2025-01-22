@@ -139,14 +139,13 @@ watch([selectedYear, selectedModule], () => {
                                 </svg>
                             </div>
                             <div class="ml-5">
-                                <div class="text-gray-400">Modules Évalués</div>
+                                <div class="text-gray-400">
+                                    Modules En Cours
+                                </div>
                                 <div class="text-2xl font-semibold">
                                     {{ filteredStats.totalModules }}
                                 </div>
                             </div>
-                        </div>
-                        <div class="mt-4 text-sm text-gray-500">
-                            Note moyenne : {{ filteredStats.averageScore }}/5
                         </div>
                     </div>
 
@@ -218,6 +217,14 @@ watch([selectedYear, selectedModule], () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    <div class="bg-white p-4 mt-4 rounded-lg shadow-md">
+                        <h3 class="font-semibold mb-2">
+                            Données de débogage :
+                        </h3>
+                        <pre class="text-sm">{{
+                            JSON.stringify(filteredStats, null, 2)
+                        }}</pre>
                     </div>
                 </div>
 
