@@ -9,11 +9,13 @@ class Question extends Model
 {
     protected $fillable = [
         'form_id',
+        'form_section_id',
         'question',
         'type',        // text, textarea, radio, select, rating
         'options',     // JSON pour les options des radio/select
         'order',
-        'is_required'
+        'is_required',
+        'controls_visibility'
     ];
 
     protected $casts = [

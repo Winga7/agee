@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/AppLayout.vue'
 import Modal from '@/Components/Modal.vue'
@@ -22,7 +22,6 @@ const props = defineProps({
 const showCreateModal = ref(false)
 const isEditing = ref(false)
 const currentSection = ref(0)
-const previewBanner = ref(null)
 const showPreviewModal = ref(false)
 const selectedForm = ref(null)
 
@@ -30,7 +29,6 @@ const form = useForm({
     id: null,
     title: '',
     description: '',
-    banner_image: null,
     sections: [{
         title: '',
         description: '',
@@ -51,7 +49,6 @@ const form = useForm({
 const resetForm = () => {
     form.reset()
     isEditing.value = false
-    previewBanner.value = null
     currentSection.value = 0
 }
 
@@ -105,17 +102,6 @@ const removeOption = (sectionIndex, questionIndex, optionIndex) => {
     form.sections[sectionIndex].questions[questionIndex].options.splice(optionIndex, 1)
 }
 
-// Gestion de l'image bannière
-const handleBannerUpload = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-        form.banner_image = file
-        const reader = new FileReader()
-        reader.onload = e => previewBanner.value = e.target.result
-        reader.readAsDataURL(file)
-    }
-}
-
 // Soumission du formulaire
 const submitForm = () => {
     if (isEditing.value) {
@@ -135,15 +121,37 @@ const submitForm = () => {
     }
 }
 
-const editForm = (formData) => {
+const editForm = (formToEdit) => {
+    form.reset()
+
+    form.id = formToEdit.id
+    form.title = formToEdit.title
+    form.description = formToEdit.description || ''
+
+    form.sections = formToEdit.sections?.length ? formToEdit.sections.map(section => ({
+        title: section.title || '',
+        description: section.description || '',
+        order: section.order || 0,
+        depends_on_question_id: section.depends_on_question_id || null,
+        depends_on_answer: section.depends_on_answer || null,
+        questions: section.questions?.length ? section.questions.map(question => ({
+            question: question.question || '',
+            type: question.type || 'text',
+            options: Array.isArray(question.options) ? question.options : [],
+            order: question.order || 0,
+            is_required: question.is_required !== undefined ? question.is_required : true,
+            controls_visibility: question.controls_visibility || false
+        })) : []
+    })) : [{
+        title: '',
+        description: '',
+        order: 0,
+        depends_on_question_id: null,
+        depends_on_answer: null,
+        questions: []
+    }]
+
     isEditing.value = true
-    form.id = formData.id
-    form.title = formData.title
-    form.description = formData.description
-    form.sections = formData.sections
-    if (formData.banner_image) {
-        previewBanner.value = `/storage/${formData.banner_image}`
-    }
     showCreateModal.value = true
 }
 
@@ -155,21 +163,14 @@ const confirmDelete = (form) => {
     }
 }
 
-const toggleActive = (form) => {
-    useForm().put(route('forms.toggle-active', form.id), {
-        is_active: !form.is_active
-    }, {
-        preserveScroll: true
-    })
-}
-
-const showPreview = (form) => {
-    selectedForm.value = form
+const showPreview = (formToPreview) => {
+    selectedForm.value = { ...formToPreview }  // Créer une copie de l'objet
     showPreviewModal.value = true
 }
 
 const closePreview = () => {
     showPreviewModal.value = false
+    selectedForm.value = null
 }
 </script>
 
@@ -198,78 +199,54 @@ const closePreview = () => {
                         <div v-for="form in forms" :key="form.id" class="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                             <div class="relative h-40">
                                 <img
-                                    v-if="form.banner_image"
-                                    :src="`/storage/${form.banner_image}`"
+                                    :src="`/storage/default-form-banner.jpg`"
                                     :alt="form.title"
                                     class="w-full h-full object-cover"
                                 >
-                                <div v-else class="w-full h-full bg-gray-100 flex items-center justify-center">
-                                    <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
                             </div>
 
                             <div class="p-4">
                                 <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ form.title }}</h3>
                                 <p class="text-gray-600 text-sm mb-4">{{ form.description }}</p>
 
-                                <div class="flex items-center justify-between text-sm text-gray-500">
+                                <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
                                     <span>{{ form.sections.length }} section(s)</span>
                                     <span>{{ form.sections.reduce((acc, section) => acc + section.questions.length, 0) }} question(s)</span>
                                 </div>
 
-                                <div class="mt-4 flex items-center justify-between">
-                                    <div class="flex items-center space-x-2">
-                                        <button
-                                            @click="editForm(form)"
-                                            class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                                        >
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                            Modifier
-                                        </button>
+                                <div class="flex flex-wrap gap-2">
+                                    <button
+                                        @click="editForm(form)"
+                                        class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                    >
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        Modifier
+                                    </button>
 
-                                        <button
-                                            @click="confirmDelete(form)"
-                                            class="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                        >
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                            Supprimer
-                                        </button>
+                                    <button
+                                        @click="confirmDelete(form)"
+                                        class="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                    >
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Supprimer
+                                    </button>
 
-                                        <button
-                                            @click="showPreview(form)"
-                                            class="inline-flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                                        >
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                            </svg>
-                                            Prévisualiser
-                                        </button>
-                                    </div>
-
-                                    <div class="flex items-center">
-                                        <label class="flex items-center cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                :checked="form.is_active"
-                                                @change="toggleActive(form)"
-                                                class="sr-only"
-                                            >
-                                            <div class="relative w-10 h-5 bg-gray-200 rounded-full transition-colors duration-200 ease-in-out"
-                                                :class="{ 'bg-green-400': form.is_active }">
-                                                <div class="absolute left-0 w-5 h-5 bg-white rounded-full transition-transform duration-200 ease-in-out transform"
-                                                    :class="{ 'translate-x-5': form.is_active }"></div>
-                                            </div>
-                                            <span class="ml-2 text-sm text-gray-600">{{ form.is_active ? 'Actif' : 'Inactif' }}</span>
-                                        </label>
-                                    </div>
+                                    <button
+                                        @click="showPreview(form)"
+                                        class="inline-flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                                    >
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Prévisualiser
+                                    </button>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -307,19 +284,6 @@ const closePreview = () => {
                             rows="3"
                         />
                         <InputError :message="form.errors.description" class="mt-2" />
-                    </div>
-
-                    <div class="mb-6">
-                        <InputLabel for="banner" value="Image bannière" />
-                        <input
-                            type="file"
-                            id="banner"
-                            @change="handleBannerUpload"
-                            accept="image/*"
-                            class="mt-1 block w-full"
-                        />
-                        <img v-if="previewBanner" :src="previewBanner" class="mt-2 max-h-32" />
-                        <InputError :message="form.errors.banner_image" class="mt-2" />
                     </div>
 
                     <!-- Sections -->
@@ -389,8 +353,8 @@ const closePreview = () => {
                                 </select>
                             </div>
 
-                            <!-- Options pour radio/select -->
-                            <div v-if="['radio', 'select'].includes(question.type)" class="mt-2">
+                            <!-- Options pour radio/select/checkbox -->
+                            <div v-if="['radio', 'select', 'checkbox'].includes(question.type)" class="mt-2">
                                 <div v-for="(option, optionIndex) in question.options" :key="optionIndex" class="flex items-center gap-2 mb-2">
                                     <TextInput
                                         v-model="question.options[optionIndex]"
@@ -449,9 +413,11 @@ const closePreview = () => {
             </div>
         </Modal>
 
+        <!-- Modal de prévisualisation -->
         <FormPreview
-            :form="selectedForm"
+            v-if="selectedForm"
             :show="showPreviewModal"
+            :form="selectedForm"
             @close="closePreview"
         />
     </AppLayout>

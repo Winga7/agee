@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('form_id')->constrained()->onDelete('cascade');
-            $table->foreignId('section_id')->constrained('form_sections')->onDelete('cascade');
+            $table->foreignId('form_section_id')->constrained('form_sections')->onDelete('cascade');
             $table->string('question');
             $table->enum('type', ['text', 'textarea', 'radio', 'checkbox', 'select', 'rating']);
             $table->json('options')->nullable();

@@ -1,20 +1,20 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Modal from '@/Components/Modal.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 
 const props = defineProps({
+    show: {
+        type: Boolean,
+        required: true
+    },
     form: {
         type: Object,
         required: true
-    },
-    show: {
-        type: Boolean,
-        default: false
     }
 })
 
-defineEmits(['close'])
+const emit = defineEmits(['close'])
 
 const currentSection = ref(0)
 const answers = ref({})
@@ -54,14 +54,22 @@ const resetPreview = () => {
     currentSection.value = 0
     initializeAnswers()
 }
+
+onMounted(() => {
+    initializeAnswers()
+})
 </script>
 
 <template>
     <Modal :show="show" @close="$emit('close')">
         <div class="p-6">
             <!-- Bannière -->
-            <div v-if="form.banner_image" class="mb-6 rounded-lg overflow-hidden">
-                <img :src="`/storage/${form.banner_image}`" :alt="form.title" class="w-full h-48 object-cover">
+            <div class="mb-6 rounded-lg overflow-hidden">
+                <img
+                    :src="`/storage/default-form-banner.jpg`"
+                    :alt="form.title"
+                    class="w-full h-48 object-cover"
+                >
             </div>
 
             <!-- En-tête -->
