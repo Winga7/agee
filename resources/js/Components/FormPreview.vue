@@ -4,14 +4,8 @@ import Modal from '@/Components/Modal.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 
 const props = defineProps({
-    show: {
-        type: Boolean,
-        required: true
-    },
-    form: {
-        type: Object,
-        required: true
-    }
+    show: Boolean,
+    form: Object
 })
 
 const emit = defineEmits(['close'])
@@ -19,18 +13,25 @@ const emit = defineEmits(['close'])
 const currentSection = ref(0)
 const answers = ref({})
 
-const currentSectionData = computed(() => props.form.sections[currentSection.value])
+const currentSectionData = computed(() => {
+    return props.form.sections[currentSection.value] || null
+})
+
+const isLastSection = computed(() => {
+    return currentSection.value === props.form.sections.length - 1
+})
 
 const canProceed = computed(() => {
     if (!currentSectionData.value) return false
 
     return currentSectionData.value.questions.every(question => {
         if (!question.is_required) return true
-        return answers.value[question.id] !== undefined && answers.value[question.id] !== ''
+        if (question.type === 'checkbox') {
+            return answers.value[question.id]?.length > 0
+        }
+        return !!answers.value[question.id]
     })
 })
-
-const isLastSection = computed(() => currentSection.value === props.form.sections.length - 1)
 
 const nextSection = () => {
     if (canProceed.value && !isLastSection.value) {

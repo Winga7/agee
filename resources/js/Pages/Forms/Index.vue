@@ -155,10 +155,16 @@ const editForm = (formToEdit) => {
     showCreateModal.value = true
 }
 
-const confirmDelete = (form) => {
+const confirmDelete = (formToDelete) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce formulaire ?')) {
-        useForm().delete(route('forms.destroy', form.id), {
-            preserveScroll: true
+        const deleteForm = useForm({})
+        deleteForm.delete(route('forms.destroy', formToDelete.id), {
+            onSuccess: () => {
+                // Le formulaire sera automatiquement retiré de la liste grâce à Inertia
+            },
+            onError: () => {
+                alert('Une erreur est survenue lors de la suppression du formulaire.')
+            }
         })
     }
 }

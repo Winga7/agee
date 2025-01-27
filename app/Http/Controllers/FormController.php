@@ -171,11 +171,16 @@ class FormController extends Controller
 
     public function destroy(Form $form)
     {
-        if ($form->banner_image) {
-            Storage::disk('public')->delete($form->banner_image);
+        try {
+            $form->sections()->delete();
+            $form->delete();
+
+            return redirect()->route('forms.index')
+                ->with('success', 'Le formulaire a été supprimé avec succès.');
+        } catch (\Exception $e) {
+            return redirect()->route('forms.index')
+                ->with('error', 'Une erreur est survenue lors de la suppression du formulaire.');
         }
-        $form->delete();
-        return back()->with('success', 'Formulaire supprimé avec succès');
     }
 
     public function toggleActive(Form $form)
