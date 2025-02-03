@@ -170,7 +170,8 @@ const confirmDelete = (formToDelete) => {
 }
 
 const showPreview = (formToPreview) => {
-    selectedForm.value = { ...formToPreview }  // Créer une copie de l'objet
+    console.log('Preview clicked', formToPreview)
+    selectedForm.value = { ...formToPreview }
     showPreviewModal.value = true
 }
 
@@ -203,11 +204,11 @@ const closePreview = () => {
 
                     <div v-else class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         <div v-for="form in forms" :key="form.id" class="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                            <div class="relative h-40">
+                            <div class="relative h-48">
                                 <img
                                     :src="`/storage/default-form-banner.jpg`"
                                     :alt="form.title"
-                                    class="w-full h-full object-cover"
+                                    class="w-full h-full object-contain"
                                 >
                             </div>
 
@@ -421,7 +422,7 @@ const closePreview = () => {
 
         <!-- Modal de prévisualisation -->
         <FormPreview
-            v-if="selectedForm"
+            v-if="showPreviewModal"
             :show="showPreviewModal"
             :form="selectedForm"
             @close="closePreview"
