@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Module extends Model
 {
@@ -17,19 +20,24 @@ class Module extends Model
     ];
 
     // Relation : un module appartient à un Professeur
-    public function professor()
+    public function professor(): BelongsTo
     {
-        return $this->belongsTo(Professor::class);
+        return $this->belongsTo(User::class, 'professor_id');
     }
 
     // Relation : un module a plusieurs évaluations
-    public function evaluations()
+    public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);
     }
 
-    public function classes()
+    public function classes(): BelongsToMany
     {
-        return $this->hasMany(ModuleClass::class);
+        return $this->belongsToMany(Classes::class, 'module_classes');
+    }
+
+    public function courseEnrollments(): HasMany
+    {
+        return $this->hasMany(CourseEnrollment::class);
     }
 }

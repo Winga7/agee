@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Student;
-use App\Models\Professor;
+use App\Models\Module;
 use App\Models\CourseEnrollment;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
+use App\Models\Classes;
 
 class DatabaseSeeder extends Seeder
 {
@@ -46,60 +46,69 @@ class DatabaseSeeder extends Seeder
             'adress' => '456 avenue des Enseignants',
         ]);
 
-        // Création de quelques étudiants (qui ne peuvent pas se connecter)
-        Student::create([
-            'last_name' => 'Dupont',
+        // Création des classes
+        $webDevClass = Classes::create([
+            'name' => 'Web Dev 2e année'
+        ]);
+
+        $designClass = Classes::create([
+            'name' => 'Design 1ère année'
+        ]);
+
+        // Création des modules
+        $module1 = Module::create([
+            'title' => 'Introduction au développement web',
+            'code' => 'WEB101',
+            'description' => 'Fondamentaux du développement web'
+        ]);
+
+        $module2 = Module::create([
+            'title' => 'Base de données',
+            'code' => 'DB101',
+            'description' => 'Introduction aux bases de données'
+        ]);
+
+        // Associer les modules aux classes
+        $module1->classes()->attach($webDevClass->id);
+        $module2->classes()->attach($webDevClass->id);
+        $module1->classes()->attach($designClass->id);
+
+        // Création des étudiants
+        $student1 = Student::create([
             'first_name' => 'Jean',
+            'last_name' => 'Dupont',
             'email' => 'jean.dupont@example.com',
-            'school_email' => 'j.dupont@ifosup.wavre.be',
-            'telephone' => '0123456789',
-            'student_id' => 'STU001',
-            'current_class' => 'Web Dev 2e année',
-            'academic_year' => '2023-2024'
         ]);
 
-        Student::create([
-            'last_name' => 'Martin',
+        $student2 = Student::create([
             'first_name' => 'Marie',
+            'last_name' => 'Martin',
             'email' => 'marie.martin@example.com',
-            'school_email' => 'm.martin@ifosup.wavre.be',
-            'telephone' => '0123456788',
-            'student_id' => 'STU002',
-            'current_class' => 'Web Dev 2e année',
-            'academic_year' => '2023-2024'
         ]);
 
-        // Autres seeders pour les modules
-        $this->call([
-            ModuleSeeder::class,
-            CourseEnrollmentSeeder::class,
-        ]);
-
-        // Après la création des étudiants et des modules
         // Création des inscriptions aux cours
         CourseEnrollment::create([
-            'student_id' => 1, // ID du premier étudiant (Jean Dupont)
-            'module_id' => 1,  // ID du premier module
+            'student_id' => $student1->id,
+            'module_id' => $module1->id,
+            'class_id' => $webDevClass->id,
             'start_date' => '2023-09-01',
             'end_date' => '2024-06-30',
-            'class_group' => 'Web Dev 2e année'
         ]);
 
         CourseEnrollment::create([
-            'student_id' => 2, // ID du deuxième étudiant (Marie Martin)
-            'module_id' => 1,  // ID du premier module
+            'student_id' => $student2->id,
+            'module_id' => $module1->id,
+            'class_id' => $webDevClass->id,
             'start_date' => '2023-09-01',
             'end_date' => '2024-06-30',
-            'class_group' => 'Web Dev 2e année'
         ]);
 
-        // Vous pouvez ajouter d'autres inscriptions pour d'autres modules
         CourseEnrollment::create([
-            'student_id' => 1,
-            'module_id' => 2,
+            'student_id' => $student1->id,
+            'module_id' => $module2->id,
+            'class_id' => $webDevClass->id,
             'start_date' => '2023-09-01',
             'end_date' => '2024-06-30',
-            'class_group' => 'Web Dev 2e année'
         ]);
     }
 }

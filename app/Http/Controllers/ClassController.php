@@ -2,20 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Classes;
+use App\Models\Module;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Module;
-use App\Models\ModuleClass;
 
 class ClassController extends Controller
 {
     public function index()
     {
-        $classGroups = ModuleClass::select('class_group')->distinct()->pluck('class_group');
-        $modules = Module::with('classes')->get();
+        $classes = Classes::with('modules')->get();
+        $modules = Module::all();
 
         return Inertia::render('Classes/Index', [
-            'classGroups' => $classGroups,
+            'classes' => $classes,
             'modules' => $modules
         ]);
     }
@@ -23,28 +23,39 @@ class ClassController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:100|unique:module_classes,class_group'
+            'name' => 'required|string|unique:classes,name'
         ]);
 
-        // La classe sera réellement créée lorsqu'elle sera associée à un module
-        return back()->with('success', 'Classe créée avec succès');
+        Classes::create([
+            'name' => $request->name
+        ]);
+
+        return redirect()->back()->with('success', 'Classe créée avec succès');
     }
 
-    public function update(Request $request, $oldName)
+    public function update(Request $request, Classes $class)
     {
         $request->validate([
-            'name' => 'required|string|max:100|unique:module_classes,class_group'
+            'name' => 'required|string|unique:classes,name,' . $class->id
         ]);
 
-        ModuleClass::where('class_group', $oldName)
-            ->update(['class_group' => $request->name]);
+        $class->update([
+            'name' => $request->name
+        ]);
 
-        return back()->with('success', 'Classe mise à jour avec succès');
+        return redirect()->back()->with('success', 'Classe modifiée avec succès');
     }
 
-    public function destroy($name)
+    public function destroy(Classes $class)
     {
-        ModuleClass::where('class_group', $name)->delete();
-        return back()->with('success', 'Classe supprimée avec succès');
+        // Vérifier s'il y a des inscriptions liées
+        if ($class->courseEnrollments()->exists()) {
+            return redirect()->back()->with('error', 'Impossible de supprimer cette classe car elle contient des étudiants inscrits');
+        }
+
+        $class->modules()->detach(); // Supprimer les relations avec les modules
+        $class->delete();
+
+        return redirect()->back()->with('success', 'Classe supprimée avec succès');
     }
 }

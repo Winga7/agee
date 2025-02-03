@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->constrained()->onDelete('cascade');
             $table->foreignId('module_id')->constrained()->onDelete('cascade');
+            $table->foreignId('class_id')->constrained()->onDelete('cascade');
             $table->date('start_date');
             $table->date('end_date');
-            $table->string('class_group'); // ex: "Web Dev 2e année"
             $table->timestamps();
         });
     }
