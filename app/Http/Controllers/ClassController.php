@@ -11,51 +11,42 @@ class ClassController extends Controller
 {
     public function index()
     {
-        $classes = Classes::with('modules')->get();
-        $modules = Module::all();
-
         return Inertia::render('Classes/Index', [
-            'classes' => $classes,
-            'modules' => $modules
+            'classes' => Classes::with(['students', 'modules'])->get()
         ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|unique:classes,name'
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:classes'
         ]);
 
-        Classes::create([
-            'name' => $request->name
-        ]);
-
+        Classes::create($validated);
         return redirect()->back()->with('success', 'Classe créée avec succès');
     }
 
     public function update(Request $request, Classes $class)
     {
-        $request->validate([
-            'name' => 'required|string|unique:classes,name,' . $class->id
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:classes,name,' . $class->id
         ]);
 
-        $class->update([
-            'name' => $request->name
-        ]);
-
-        return redirect()->back()->with('success', 'Classe modifiée avec succès');
+        $class->update($validated);
+        return redirect()->back()->with('success', 'Classe mise à jour avec succès');
     }
 
     public function destroy(Classes $class)
     {
-        // Vérifier s'il y a des inscriptions liées
-        if ($class->courseEnrollments()->exists()) {
-            return redirect()->back()->with('error', 'Impossible de supprimer cette classe car elle contient des étudiants inscrits');
-        }
-
-        $class->modules()->detach(); // Supprimer les relations avec les modules
         $class->delete();
-
         return redirect()->back()->with('success', 'Classe supprimée avec succès');
+    }
+
+    public function show(Classes $class)
+    {
+        return Inertia::render('Classes/Show', [
+            'class' => $class->load(['students', 'modules']),
+            'modules' => Module::all()
+        ]);
     }
 }

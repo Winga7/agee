@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('module_classes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('module_id')->constrained()->onDelete('cascade');
-            $table->foreignId('class_id')->constrained()->onDelete('cascade');
+            $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
             $table->timestamps();
 
             // Contrainte unique pour éviter les doublons

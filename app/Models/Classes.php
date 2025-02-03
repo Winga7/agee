@@ -12,11 +12,16 @@ class Classes extends Model
 
     public function modules(): BelongsToMany
     {
-        return $this->belongsToMany(Module::class, 'module_classes');
+        return $this->belongsToMany(Module::class, 'module_classes', 'class_id', 'module_id');
     }
 
     public function courseEnrollments(): HasMany
     {
         return $this->hasMany(CourseEnrollment::class, 'class_id');
+    }
+
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class, 'class_id');
     }
 }

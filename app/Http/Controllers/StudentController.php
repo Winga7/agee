@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Models\Classes;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Module;
@@ -16,9 +17,9 @@ class StudentController extends Controller
     public function index()
     {
         return Inertia::render('Students/Index', [
-            'students' => Student::with('courseEnrollments.module')->get(),
+            'students' => Student::with(['courseEnrollments.module', 'class'])->get(),
             'modules' => Module::all(),
-            'classGroups' => ['Web Dev 1ère année', 'Web Dev 2e année', 'Web Dev 3e année']
+            'classes' => Classes::all()
         ]);
     }
 
@@ -35,24 +36,20 @@ class StudentController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'email' => 'required|email|unique:students,email',
-            'student_number' => 'required|string|unique:students,student_id',
-            'birth_date' => 'required|date',
-            'phone_number' => 'nullable|string',
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:students',
+            'school_email' => 'nullable|email|unique:students',
+            'telephone' => 'nullable|string',
+            'student_id' => 'required|string|unique:students',
+            'class_id' => 'required|exists:classes,id',
+            'academic_year' => 'required|string',
+            'status' => 'required|in:active,inactive,graduated'
         ]);
 
-        Student::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'student_id' => $request->student_number,
-            'telephone' => $request->phone_number,
-        ]);
-
-        return redirect()->back();
+        $student = Student::create($validated);
+        return response()->json($student, 201);
     }
 
     /**
@@ -76,23 +73,19 @@ class StudentController extends Controller
      */
     public function update(Request $request, Student $student)
     {
-        $request->validate([
+        $validated = $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'email' => 'required|email|unique:students,email,' . $student->id,
-            'student_number' => 'required|string|unique:students,student_id,' . $student->id,
-            'birth_date' => 'required|date',
-            'phone_number' => 'nullable|string',
+            'school_email' => 'nullable|email|unique:students,school_email,' . $student->id,
+            'telephone' => 'nullable|string',
+            'student_id' => 'required|string|unique:students,student_id,' . $student->id,
+            'class_id' => 'required|exists:classes,id',
+            'academic_year' => 'required|string',
+            'status' => 'required|in:active,inactive,graduated'
         ]);
 
-        $student->update([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'student_id' => $request->student_number,
-            'telephone' => $request->phone_number,
-        ]);
-
+        $student->update($validated);
         return redirect()->back();
     }
 
@@ -110,13 +103,12 @@ class StudentController extends Controller
         $request->validate([
             'student_id' => 'required|exists:students,id',
             'module_id' => 'required|exists:modules,id',
-            'class_group' => 'required|string',
+            'class_id' => 'required|exists:classes,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
         ]);
 
         CourseEnrollment::create($request->all());
-
         return back()->with('success', 'Inscription créée avec succès');
     }
 }

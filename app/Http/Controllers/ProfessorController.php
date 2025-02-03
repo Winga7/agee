@@ -11,9 +11,8 @@ class ProfessorController extends Controller
     // Liste des professeurs
     public function index()
     {
-        $professors = Professor::all();
         return Inertia::render('Professors/Index', [
-            'professors' => $professors
+            'professors' => Professor::with('modules')->get()
         ]);
     }
 
@@ -26,26 +25,29 @@ class ProfessorController extends Controller
     // Stocker le nouveau professeur en BDD
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'first_name' => 'required|string|max:100',
-            'last_name'  => 'required|string|max:100',
-            'email'      => 'nullable|email',
-            'department' => 'nullable|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'email' => 'required|email|unique:professors',
+            'school_email' => 'nullable|email|unique:professors',
+            'telephone' => 'nullable|string',
+            'adress' => 'nullable|string',
+            'department' => 'nullable|string|max:100'
         ]);
 
-        Professor::create($request->all());
-        return to_route('professors.index');
+        Professor::create($validated);
+        return redirect()->back()->with('success', 'Professeur créé avec succès');
     }
 
     // Afficher un professeur (optionnel, selon tes besoins)
     public function show(Professor $professor)
     {
         return Inertia::render('Professors/Show', [
-            'professor' => $professor
+            'professor' => $professor->load('modules')
         ]);
     }
 
-    // Formulaire d’édition
+    // Formulaire d'édition
     public function edit(Professor $professor)
     {
         return Inertia::render('Professors/Edit', [
@@ -56,21 +58,24 @@ class ProfessorController extends Controller
     // Mettre à jour un professeur
     public function update(Request $request, Professor $professor)
     {
-        $request->validate([
+        $validated = $request->validate([
             'first_name' => 'required|string|max:100',
-            'last_name'  => 'required|string|max:100',
-            'email'      => 'nullable|email',
-            'department' => 'nullable|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'email' => 'required|email|unique:professors,email,' . $professor->id,
+            'school_email' => 'nullable|email|unique:professors,school_email,' . $professor->id,
+            'telephone' => 'nullable|string',
+            'adress' => 'nullable|string',
+            'department' => 'nullable|string|max:100'
         ]);
 
-        $professor->update($request->all());
-        return to_route('professors.index');
+        $professor->update($validated);
+        return redirect()->back()->with('success', 'Professeur mis à jour avec succès');
     }
 
     // Supprimer un professeur
     public function destroy(Professor $professor)
     {
         $professor->delete();
-        return to_route('professors.index');
+        return redirect()->back()->with('success', 'Professeur supprimé avec succès');
     }
 }

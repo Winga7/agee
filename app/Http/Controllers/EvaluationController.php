@@ -53,28 +53,47 @@ class EvaluationController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'module_id' => 'required|exists:modules,id',
-            'score' => 'required|integer|between:1,5',
-            'comment' => 'nullable|string|max:1000',
+            'class_id' => 'required|exists:classes,id'
         ]);
 
-        // Anonymisation du commentaire via notre service
-        if (!empty($validated['comment'])) {
-            $anonymizedComment = $this->aiService->anonymizeComment($validated['comment']);
+        try {
+            DB::beginTransaction();
+
+            $enrollments = CourseEnrollment::where('module_id', $request->module_id)
+                ->where('class_id', $request->class_id)
+                ->with('student')
+                ->get();
+
+            foreach ($enrollments as $enrollment) {
+                // Invalider les anciens tokens
+                EvaluationToken::where('student_email', $enrollment->student->email)
+                    ->where('module_id', $request->module_id)
+                    ->where('class_id', $request->class_id)
+                    ->where('is_used', false)
+                    ->update(['is_used' => true]);
+
+                // Créer un nouveau token
+                $token = Str::random(32);
+                EvaluationToken::create([
+                    'token' => $token,
+                    'student_email' => $enrollment->student->email,
+                    'module_id' => $request->module_id,
+                    'class_id' => $request->class_id,
+                    'expires_at' => now()->addDays(7),
+                ]);
+
+                // TODO: Envoyer l'email avec le token
+            }
+
+            DB::commit();
+            return back()->with('success', 'Invitations envoyées avec succès');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erreur lors de l\'envoi des invitations:', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Une erreur est survenue lors de l\'envoi des invitations.');
         }
-
-        Evaluation::create([
-            'module_id' => $validated['module_id'],
-            'score' => $validated['score'],
-            'original_comment' => $validated['comment'] ?? null,
-            'anonymized_comment' => $anonymizedComment ?? null,
-            'is_anonymized' => !empty($anonymizedComment),
-            'user_hash' => hash('sha256', auth()->id() . $validated['module_id'] . env('APP_KEY'))
-        ]);
-
-        return to_route('evaluations.index')
-            ->with('success', 'Votre évaluation a été enregistrée avec succès.');
     }
 
     /**
@@ -209,60 +228,6 @@ class EvaluationController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Une erreur est survenue lors de l\'enregistrement de votre évaluation.');
-        }
-    }
-
-    public function sendGroup(Request $request)
-    {
-        $request->validate([
-            'module_id' => 'required|exists:modules,id',
-            'class_id' => 'required|exists:classes,id'
-        ]);
-
-        DB::beginTransaction();
-        try {
-            // Récupérer les inscriptions uniques pour éviter les doublons
-            $enrollments = CourseEnrollment::where('module_id', $request->module_id)
-                ->where('class_id', $request->class_id)
-                ->with('student')
-                ->get()
-                ->unique('student_id');
-
-            Log::info('Enrollments trouvés:', [
-                'count' => $enrollments->count(),
-                'enrollments' => $enrollments->toArray()
-            ]);
-
-            if ($enrollments->isEmpty()) {
-                DB::rollBack();
-                return back()->with('error', 'Aucun étudiant trouvé pour ce module et cette classe.');
-            }
-
-            foreach ($enrollments as $enrollment) {
-                // Invalider les anciens tokens
-                EvaluationToken::where('student_email', $enrollment->student->email)
-                    ->where('module_id', $request->module_id)
-                    ->where('is_used', false)
-                    ->update(['is_used' => true]);
-
-                // Créer un nouveau token
-                $token = Str::random(32);
-                EvaluationToken::create([
-                    'token' => $token,
-                    'student_email' => $enrollment->student->email,
-                    'module_id' => $request->module_id,
-                    'expires_at' => now()->addDays(7),
-                ]);
-
-                // Envoyer l'email (à implémenter)
-            }
-
-            DB::commit();
-            return back()->with('success', 'Invitations envoyées avec succès.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Erreur lors de l\'envoi des invitations:', ['error' => $e->getMessage()]);
-            return back()->with('error', 'Une erreur est survenue lors de l\'envoi des invitations.');
         }
     }
 }

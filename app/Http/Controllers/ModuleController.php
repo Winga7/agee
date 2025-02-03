@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Module;
 use App\Models\Professor;
+use App\Models\Classes;
 use App\Models\CourseEnrollment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,7 +19,7 @@ class ModuleController extends Controller
         return Inertia::render('Modules/Index', [
             'modules' => Module::with(['professor', 'classes'])->get(),
             'professors' => Professor::all(),
-            'classGroups' => ['Web Dev 1ère année', 'Web Dev 2e année', 'Web Dev 3e année']
+            'classes' => Classes::all()
         ]);
     }
 
@@ -40,21 +41,19 @@ class ModuleController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:150',
-            'code' => 'nullable|string|max:50',
+            'code' => 'nullable|string|max:50|unique:modules',
+            'description' => 'nullable|string',
             'professor_id' => 'nullable|exists:professors,id',
-            'class_groups' => 'required|array|min:1',
-            'class_groups.*' => 'required|string'
+            'class_ids' => 'required|array|min:1',
+            'class_ids.*' => 'required|exists:classes,id'
         ]);
 
-        $module = Module::create($request->except('class_groups'));
+        $module = Module::create($request->except('class_ids'));
+        $module->classes()->attach($request->class_ids);
 
-        foreach ($request->class_groups as $group) {
-            $module->classes()->create(['class_group' => $group]);
-        }
-
-        return back()->with('success', 'Module créé avec succès');
+        return redirect()->back()->with('success', 'Module créé avec succès');
     }
 
     /**
@@ -62,11 +61,8 @@ class ModuleController extends Controller
      */
     public function show(Module $module)
     {
-        // On charge éventuellement les infos du professeur
-        $module->load('professor');
-
         return Inertia::render('Modules/Show', [
-            'module' => $module
+            'module' => $module->load(['professor', 'classes', 'courseEnrollments.student'])
         ]);
     }
 
@@ -88,23 +84,19 @@ class ModuleController extends Controller
      */
     public function update(Request $request, Module $module)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title' => 'required|string|max:150',
-            'code' => 'nullable|string|max:50',
+            'code' => 'nullable|string|max:50|unique:modules,code,' . $module->id,
+            'description' => 'nullable|string',
             'professor_id' => 'nullable|exists:professors,id',
-            'class_groups' => 'required|array|min:1',
-            'class_groups.*' => 'required|string'
+            'class_ids' => 'required|array|min:1',
+            'class_ids.*' => 'required|exists:classes,id'
         ]);
 
-        $module->update($request->except('class_groups'));
+        $module->update($request->except('class_ids'));
+        $module->classes()->sync($request->class_ids);
 
-        // Mettre à jour les classes
-        $module->classes()->delete();
-        foreach ($request->class_groups as $group) {
-            $module->classes()->create(['class_group' => $group]);
-        }
-
-        return back()->with('success', 'Module mis à jour avec succès');
+        return redirect()->back()->with('success', 'Module mis à jour avec succès');
     }
 
     /**
@@ -113,9 +105,7 @@ class ModuleController extends Controller
     public function destroy(Module $module)
     {
         $module->delete();
-
-        return to_route('modules.index')
-            ->with('success', 'Module supprimé avec succès !');
+        return redirect()->back()->with('success', 'Module supprimé avec succès');
     }
 
     public function getGroups(Module $module)
