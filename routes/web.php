@@ -5,6 +5,8 @@ use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\ClassController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -48,6 +50,12 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::put('/forms/{form}', [FormController::class, 'update'])->name('forms.update');
         Route::delete('/forms/{form}', [FormController::class, 'destroy'])->name('forms.destroy');
         Route::put('/forms/{form}/toggle-active', [FormController::class, 'toggleActive'])->name('forms.toggle-active');
+    });
+
+    Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+        Route::resource('students', StudentController::class);
+        Route::post('/students/enroll', [StudentController::class, 'enroll'])->name('students.enroll');
+        Route::resource('classes', ClassController::class);
     });
 });
 
