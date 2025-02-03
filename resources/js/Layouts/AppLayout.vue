@@ -133,8 +133,8 @@ const logout = () => {
                 </div>
 
                 <NavLink
-                  :href="route('evaluations.index')"
-                  :active="route().current('evaluations.index')"
+                  :href="route('evaluations.manage')"
+                  :active="route().current('evaluations.manage')"
                   class="hover:text-indigo-600"
                 >
                   Évaluations
