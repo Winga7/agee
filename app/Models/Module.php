@@ -13,6 +13,7 @@ class Module extends Model
         'title',
         'code',
         'professor_id',
+        'description'
     ];
 
     // Relation : un module appartient à un Professeur
@@ -25,5 +26,10 @@ class Module extends Model
     public function evaluations()
     {
         return $this->hasMany(Evaluation::class);
+    }
+
+    public function classes()
+    {
+        return $this->hasMany(ModuleClass::class);
     }
 }

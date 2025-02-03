@@ -61,8 +61,26 @@ const logout = () => {
                                     Gestion des Évaluations
                                 </NavLink>
 
+                                <NavLink
+                                    :href="route('students.index')"
+                                    :active="route().current('students.index')"
+                                >
+                                    Gestion des Étudiants
+                                </NavLink>
+
                                 <NavLink :href="route('forms.index')" :active="route().current('forms.index')">
                                     Formulaires
+                                </NavLink>
+
+                                <NavLink
+                                    :href="route('modules.index')"
+                                    :active="route().current('modules.index')"
+                                >
+                                    Gestion des Modules
+                                </NavLink>
+
+                                <NavLink :href="route('classes.index')" :active="route().current('classes.index')">
+                                    Gestion des Classes
                                 </NavLink>
                             </div>
                         </div>
@@ -210,6 +228,24 @@ const logout = () => {
 
                         <ResponsiveNavLink :href="route('forms.index')" :active="route().current('forms.index')">
                             Formulaires
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            :href="route('students.index')"
+                            :active="route().current('students.index')"
+                        >
+                            Gestion des Étudiants
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            :href="route('modules.index')"
+                            :active="route().current('modules.index')"
+                        >
+                            Gestion des Modules
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink :href="route('classes.index')" :active="route().current('classes.index')">
+                            Gestion des Classes
                         </ResponsiveNavLink>
                     </div>
 

@@ -15,11 +15,10 @@ class ModuleController extends Controller
      */
     public function index()
     {
-        // On récupère tous les modules avec le professeur associé (optionnel)
-        $modules = Module::with('professor')->get();
-
         return Inertia::render('Modules/Index', [
-            'modules' => $modules
+            'modules' => Module::with(['professor', 'classes'])->get(),
+            'professors' => Professor::all(),
+            'classGroups' => ['Web Dev 1ère année', 'Web Dev 2e année', 'Web Dev 3e année']
         ]);
     }
 
@@ -42,15 +41,20 @@ class ModuleController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title'         => 'required|string|max:150',
-            'code'          => 'nullable|string|max:50',
-            'professor_id'  => 'nullable|exists:professors,id',
+            'title' => 'required|string|max:150',
+            'code' => 'nullable|string|max:50',
+            'professor_id' => 'nullable|exists:professors,id',
+            'class_groups' => 'required|array|min:1',
+            'class_groups.*' => 'required|string'
         ]);
 
-        Module::create($request->all());
+        $module = Module::create($request->except('class_groups'));
 
-        return to_route('modules.index')
-            ->with('success', 'Module créé avec succès !');
+        foreach ($request->class_groups as $group) {
+            $module->classes()->create(['class_group' => $group]);
+        }
+
+        return back()->with('success', 'Module créé avec succès');
     }
 
     /**
@@ -85,15 +89,22 @@ class ModuleController extends Controller
     public function update(Request $request, Module $module)
     {
         $request->validate([
-            'title'         => 'required|string|max:150',
-            'code'          => 'nullable|string|max:50',
-            'professor_id'  => 'nullable|exists:professors,id',
+            'title' => 'required|string|max:150',
+            'code' => 'nullable|string|max:50',
+            'professor_id' => 'nullable|exists:professors,id',
+            'class_groups' => 'required|array|min:1',
+            'class_groups.*' => 'required|string'
         ]);
 
-        $module->update($request->all());
+        $module->update($request->except('class_groups'));
 
-        return to_route('modules.index')
-            ->with('success', 'Module mis à jour avec succès !');
+        // Mettre à jour les classes
+        $module->classes()->delete();
+        foreach ($request->class_groups as $group) {
+            $module->classes()->create(['class_group' => $group]);
+        }
+
+        return back()->with('success', 'Module mis à jour avec succès');
     }
 
     /**
