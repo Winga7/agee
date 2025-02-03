@@ -1,135 +1,150 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import Modal from '@/Components/Modal.vue'
-import SecondaryButton from '@/Components/SecondaryButton.vue'
+import { ref, computed, onMounted } from "vue";
+import Modal from "@/Components/Modal.vue";
+import SecondaryButton from "@/Components/SecondaryButton.vue";
 
 const props = defineProps({
-    show: {
-        type: Boolean,
-        required: true,
-        default: false
-    },
-    form: {
-        type: Object,
-        required: true
-    }
-})
+    show: Boolean,
+    form: Object,
+});
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(["close"]);
 
-const currentSection = ref(0)
-const answers = ref({})
+const currentSection = ref(0);
+const answers = ref({});
 
 const currentSectionData = computed(() => {
-    return props.form.sections[currentSection.value] || null
-})
+    if (!props.form || !props.form.sections) return null;
+    return props.form.sections[currentSection.value] || null;
+});
 
 const isLastSection = computed(() => {
-    return currentSection.value === props.form.sections.length - 1
-})
+    if (!props.form || !props.form.sections) return true;
+    return currentSection.value === props.form.sections.length - 1;
+});
 
 const canProceed = computed(() => {
-    if (!currentSectionData.value) return false
+    if (!currentSectionData.value) return false;
 
-    return currentSectionData.value.questions.every(question => {
-        if (!question.is_required) return true
-        if (question.type === 'checkbox') {
-            return answers.value[question.id]?.length > 0
+    return currentSectionData.value.questions.every((question) => {
+        if (!question.is_required) return true;
+        if (question.type === "checkbox") {
+            return answers.value[question.id]?.length > 0;
         }
-        return !!answers.value[question.id]
-    })
-})
+        return !!answers.value[question.id];
+    });
+});
 
 const nextSection = () => {
     if (canProceed.value && !isLastSection.value) {
-        currentSection.value++
+        currentSection.value++;
     }
-}
+};
 
 const initializeAnswers = () => {
-    props.form.sections.forEach(section => {
-        section.questions.forEach(question => {
-            if (question.type === 'checkbox') {
-                answers.value[question.id] = []
+    if (!props.form || !props.form.sections) return;
+    props.form.sections.forEach((section) => {
+        section.questions.forEach((question) => {
+            if (question.type === "checkbox") {
+                answers.value[question.id] = [];
             } else {
-                answers.value[question.id] = ''
+                answers.value[question.id] = "";
             }
-        })
-    })
-}
+        });
+    });
+};
 
 const resetPreview = () => {
-    currentSection.value = 0
-    initializeAnswers()
-}
-
-const closePreview = () => {
-    showPreviewModal.value = false
-    selectedForm.value = null
-}
+    currentSection.value = 0;
+    initializeAnswers();
+};
 
 onMounted(() => {
-    initializeAnswers()
-})
-
-// Ajout d'un watcher pour déboguer
-watch(() => props.show, (newVal) => {
-    console.log('Modal show changed:', newVal)
-})
+    initializeAnswers();
+});
 </script>
 
 <template>
-    <Modal
-        :show="show"
-        @close="$emit('close')"
-        :max-width="'2xl'"
-        :closeable="true"
-    >
-        <div class="p-6">
+    <Modal :show="show" @close="$emit('close')" maxWidth="2xl">
+        <!-- Vérifier que form existe avant d'accéder à ses propriétés -->
+        <div v-if="form" class="p-6">
             <!-- Bannière -->
             <div class="mb-6 rounded-lg overflow-hidden">
                 <img
                     :src="`/storage/default-form-banner.jpg`"
                     :alt="form.title"
                     class="w-full h-48 object-contain"
-                >
+                />
             </div>
 
             <!-- Contenu du formulaire -->
             <div class="max-w-3xl mx-auto">
                 <!-- En-tête -->
                 <div class="mb-8 text-center">
-                    <h2 class="text-2xl font-bold text-gray-900">{{ form.title }}</h2>
-                    <p v-if="form.description" class="mt-2 text-gray-600">{{ form.description }}</p>
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        {{ form.title }}
+                    </h2>
+                    <p v-if="form.description" class="mt-2 text-gray-600">
+                        {{ form.description }}
+                    </p>
                 </div>
 
                 <!-- Progression -->
-                <div class="mb-6">
-                    <div class="flex justify-between text-sm text-gray-600 mb-2">
-                        <span>Section {{ currentSection + 1 }} sur {{ form.sections.length }}</span>
-                        <span>{{ Math.round(((currentSection + 1) / form.sections.length) * 100) }}%</span>
+                <div v-if="form.sections" class="mb-6">
+                    <div
+                        class="flex justify-between text-sm text-gray-600 mb-2"
+                    >
+                        <span>
+                            Section {{ currentSection + 1 }} sur
+                            {{ form.sections.length }}
+                        </span>
+                        <span>
+                            {{
+                                Math.round(
+                                    ((currentSection + 1) /
+                                        form.sections.length) *
+                                        100
+                                )
+                            }}%
+                        </span>
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div
                             class="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                            :style="`width: ${((currentSection + 1) / form.sections.length) * 100}%`"
+                            :style="`width: ${
+                                ((currentSection + 1) / form.sections.length) *
+                                100
+                            }%`"
                         ></div>
                     </div>
                 </div>
 
                 <!-- Section courante -->
                 <div v-if="currentSectionData" class="mb-8">
-                    <h3 class="text-xl font-semibold mb-4">{{ currentSectionData.title }}</h3>
-                    <p v-if="currentSectionData.description" class="text-gray-600 mb-6">
+                    <h3 class="text-xl font-semibold mb-4">
+                        {{ currentSectionData.title }}
+                    </h3>
+                    <p
+                        v-if="currentSectionData.description"
+                        class="text-gray-600 mb-6"
+                    >
                         {{ currentSectionData.description }}
                     </p>
 
                     <!-- Questions -->
                     <div class="space-y-6">
-                        <div v-for="question in currentSectionData.questions" :key="question.id" class="border-b pb-6">
+                        <div
+                            v-for="question in currentSectionData.questions"
+                            :key="question.id"
+                            class="border-b pb-6"
+                        >
                             <label class="block mb-2 font-medium">
                                 {{ question.question }}
-                                <span v-if="question.is_required" class="text-red-500">*</span>
+                                <span
+                                    v-if="question.is_required"
+                                    class="text-red-500"
+                                    >*</span
+                                >
                             </label>
 
                             <!-- Input en fonction du type -->
@@ -141,7 +156,7 @@ watch(() => props.show, (newVal) => {
                                     type="text"
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     :required="question.is_required"
-                                >
+                                />
 
                                 <!-- Texte long -->
                                 <textarea
@@ -153,8 +168,15 @@ watch(() => props.show, (newVal) => {
                                 ></textarea>
 
                                 <!-- Choix unique -->
-                                <div v-else-if="question.type === 'radio'" class="space-y-2">
-                                    <div v-for="option in question.options" :key="option" class="flex items-center">
+                                <div
+                                    v-else-if="question.type === 'radio'"
+                                    class="space-y-2"
+                                >
+                                    <div
+                                        v-for="option in question.options"
+                                        :key="option"
+                                        class="flex items-center"
+                                    >
                                         <input
                                             type="radio"
                                             :name="`question-${question.id}`"
@@ -162,22 +184,38 @@ watch(() => props.show, (newVal) => {
                                             v-model="answers[question.id]"
                                             class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
                                             :required="question.is_required"
-                                        >
-                                        <label class="ml-3 text-gray-700">{{ option }}</label>
+                                        />
+                                        <label class="ml-3 text-gray-700">{{
+                                            option
+                                        }}</label>
                                     </div>
                                 </div>
 
                                 <!-- Choix multiples -->
-                                <div v-else-if="question.type === 'checkbox'" class="space-y-2">
-                                    <div v-for="option in question.options" :key="option" class="flex items-center">
+                                <div
+                                    v-else-if="question.type === 'checkbox'"
+                                    class="space-y-2"
+                                >
+                                    <div
+                                        v-for="option in question.options"
+                                        :key="option"
+                                        class="flex items-center"
+                                    >
                                         <input
                                             type="checkbox"
                                             :value="option"
                                             v-model="answers[question.id]"
                                             class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 h-4 w-4"
-                                            :required="question.is_required && (!answers[question.id] || answers[question.id].length === 0)"
-                                        >
-                                        <label class="ml-3 text-gray-700">{{ option }}</label>
+                                            :required="
+                                                question.is_required &&
+                                                (!answers[question.id] ||
+                                                    answers[question.id]
+                                                        .length === 0)
+                                            "
+                                        />
+                                        <label class="ml-3 text-gray-700">{{
+                                            option
+                                        }}</label>
                                     </div>
                                 </div>
 
@@ -188,20 +226,33 @@ watch(() => props.show, (newVal) => {
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
                                     :required="question.is_required"
                                 >
-                                    <option value="">Sélectionnez une option</option>
-                                    <option v-for="option in question.options" :key="option" :value="option">
+                                    <option value="">
+                                        Sélectionnez une option
+                                    </option>
+                                    <option
+                                        v-for="option in question.options"
+                                        :key="option"
+                                        :value="option"
+                                    >
                                         {{ option }}
                                     </option>
                                 </select>
 
                                 <!-- Note (étoiles) -->
-                                <div v-else-if="question.type === 'rating'" class="flex items-center space-x-1">
+                                <div
+                                    v-else-if="question.type === 'rating'"
+                                    class="flex items-center space-x-1"
+                                >
                                     <button
                                         v-for="star in 5"
                                         :key="star"
                                         type="button"
                                         class="text-2xl focus:outline-none"
-                                        :class="(answers[question.id] || 0) >= star ? 'text-yellow-400' : 'text-gray-300'"
+                                        :class="
+                                            (answers[question.id] || 0) >= star
+                                                ? 'text-yellow-400'
+                                                : 'text-gray-300'
+                                        "
                                         @click="answers[question.id] = star"
                                     >
                                         ★
@@ -231,7 +282,10 @@ watch(() => props.show, (newVal) => {
 
                     <SecondaryButton
                         v-else
-                        @click="$emit('close'); resetPreview()"
+                        @click="
+                            $emit('close');
+                            resetPreview();
+                        "
                     >
                         Fermer la prévisualisation
                     </SecondaryButton>
