@@ -22,7 +22,7 @@ class Module extends Model
     // Relation : un module appartient à un Professeur
     public function professor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'professor_id');
+        return $this->belongsTo(Professor::class, 'professor_id');
     }
 
     // Relation : un module a plusieurs évaluations

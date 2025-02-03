@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Student extends Model
 {
@@ -14,7 +15,7 @@ class Student extends Model
         'school_email',
         'telephone',
         'student_id',
-        'current_class',
+        'class_id',
         'academic_year',
         'status'
     ];
@@ -28,5 +29,10 @@ class Student extends Model
     public function evaluationTokens()
     {
         return $this->hasMany(EvaluationToken::class, 'student_email', 'email');
+    }
+
+    public function class(): BelongsTo
+    {
+        return $this->belongsTo(Classes::class, 'class_id');
     }
 }
