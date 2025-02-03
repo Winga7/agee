@@ -9,13 +9,6 @@ defineProps({
         type: Boolean,
     },
 });
-
-function handleImageError() {
-    document.getElementById("screenshot-container")?.classList.add("!hidden");
-    document.getElementById("docs-card")?.classList.add("!row-span-1");
-    document.getElementById("docs-card-content")?.classList.add("!flex-row");
-    document.getElementById("background")?.classList.add("!hidden");
-}
 </script>
 
 <template>
@@ -57,6 +50,11 @@ function handleImageError() {
         <div class="relative px-6 lg:px-8">
             <div class="mx-auto max-w-7xl py-24 sm:py-32">
                 <div class="text-center">
+                    <img
+                        src="/images/logo-agee.png"
+                        alt="logo AGEE"
+                        class="mx-auto h-24 sm:h-32 md:h-40 transform transition-transform duration-700 hover:scale-105"
+                    />
                     <h1
                         class="text-4xl font-bold tracking-tight text-white sm:text-6xl"
                     >
