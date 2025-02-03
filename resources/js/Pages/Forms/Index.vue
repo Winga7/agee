@@ -171,7 +171,7 @@ const confirmDelete = (formToDelete) => {
 
 const showPreview = (formToPreview) => {
     console.log('Preview clicked', formToPreview)
-    selectedForm.value = { ...formToPreview }
+    selectedForm.value = JSON.parse(JSON.stringify(formToPreview))
     showPreviewModal.value = true
 }
 

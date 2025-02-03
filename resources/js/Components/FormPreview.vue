@@ -1,11 +1,18 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import Modal from '@/Components/Modal.vue'
 import SecondaryButton from '@/Components/SecondaryButton.vue'
 
 const props = defineProps({
-    show: Boolean,
-    form: Object
+    show: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    form: {
+        type: Object,
+        required: true
+    }
 })
 
 const emit = defineEmits(['close'])
@@ -56,13 +63,28 @@ const resetPreview = () => {
     initializeAnswers()
 }
 
+const closePreview = () => {
+    showPreviewModal.value = false
+    selectedForm.value = null
+}
+
 onMounted(() => {
     initializeAnswers()
+})
+
+// Ajout d'un watcher pour déboguer
+watch(() => props.show, (newVal) => {
+    console.log('Modal show changed:', newVal)
 })
 </script>
 
 <template>
-    <Modal :show="show" @close="$emit('close')" maxWidth="2xl">
+    <Modal
+        :show="show"
+        @close="$emit('close')"
+        :max-width="'2xl'"
+        :closeable="true"
+    >
         <div class="p-6">
             <!-- Bannière -->
             <div class="mb-6 rounded-lg overflow-hidden">
