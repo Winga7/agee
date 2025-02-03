@@ -4,6 +4,7 @@ use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\ProfessorController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FormController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -40,6 +41,14 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::get('/api/dashboard/stats', [DashboardController::class, 'getFilteredStats']);
     // Ajouter dans le groupe middleware auth
     Route::get('/api/modules/{module}/groups', [ModuleController::class, 'getGroups']);
+
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/forms', [FormController::class, 'index'])->name('forms.index');
+        Route::post('/forms', [FormController::class, 'store'])->name('forms.store');
+        Route::put('/forms/{form}', [FormController::class, 'update'])->name('forms.update');
+        Route::delete('/forms/{form}', [FormController::class, 'destroy'])->name('forms.destroy');
+        Route::put('/forms/{form}/toggle-active', [FormController::class, 'toggleActive'])->name('forms.toggle-active');
+    });
 });
 
 // Routes publiques pour les évaluations par token

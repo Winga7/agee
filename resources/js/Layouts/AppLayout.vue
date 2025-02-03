@@ -60,6 +60,10 @@ const logout = () => {
                                 >
                                     Gestion des Évaluations
                                 </NavLink>
+
+                                <NavLink :href="route('forms.index')" :active="route().current('forms.index')">
+                                    Formulaires
+                                </NavLink>
                             </div>
                         </div>
 
@@ -202,6 +206,10 @@ const logout = () => {
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink :href="route('forms.index')" :active="route().current('forms.index')">
+                            Formulaires
                         </ResponsiveNavLink>
                     </div>
 
