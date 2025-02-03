@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('school_email')->unique()->nullable();
             $table->string('telephone')->nullable();
             $table->string('student_id')->unique(); // Numéro d'étudiant
-            $table->string('current_class'); // ex: "Web Dev 2e année"
+            $table->foreignId('class_id')->nullable()->constrained(); // Relation avec la classe actuelle
             $table->string('academic_year'); // ex: "2023-2024"
             $table->enum('status', ['active', 'inactive', 'graduated'])
                 ->default('active');

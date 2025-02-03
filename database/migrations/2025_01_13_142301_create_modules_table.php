@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('title', 150);
             $table->string('code', 50)->unique()->nullable(); // ex: MATH101
+            $table->text('description')->nullable(); // Ajout de la colonne description
             // Relation avec un professeur
             $table->unsignedBigInteger('professor_id')->nullable();
             $table->foreign('professor_id')->references('id')->on('professors')->onDelete('set null');

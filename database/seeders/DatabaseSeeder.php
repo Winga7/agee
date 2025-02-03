@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\Module;
 use App\Models\CourseEnrollment;
 use App\Models\Classes;
+use App\Models\Professor;
 
 class DatabaseSeeder extends Seeder
 {
@@ -78,12 +79,18 @@ class DatabaseSeeder extends Seeder
             'first_name' => 'Jean',
             'last_name' => 'Dupont',
             'email' => 'jean.dupont@example.com',
+            'student_id' => 'STU001',
+            'academic_year' => '2023-2024',
+            'class_id' => $webDevClass->id
         ]);
 
         $student2 = Student::create([
             'first_name' => 'Marie',
             'last_name' => 'Martin',
             'email' => 'marie.martin@example.com',
+            'student_id' => 'STU002',
+            'academic_year' => '2023-2024',
+            'class_id' => $webDevClass->id
         ]);
 
         // Création des inscriptions aux cours

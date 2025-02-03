@@ -19,6 +19,9 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('end_date');
             $table->timestamps();
+
+            // Contrainte unique pour éviter les doublons d'inscription
+            $table->unique(['student_id', 'module_id', 'class_id']);
         });
     }
 

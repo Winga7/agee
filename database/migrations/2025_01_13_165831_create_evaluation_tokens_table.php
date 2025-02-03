@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('token')->unique();
             $table->foreignId('module_id')->constrained();
             $table->string('student_email');
-            $table->string('class_group');
+            $table->foreignId('class_id')->constrained();
             $table->dateTime('expires_at');
             $table->boolean('is_used')->default(false);
             $table->timestamp('used_at')->nullable();

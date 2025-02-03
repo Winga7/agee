@@ -33,7 +33,7 @@ class Module extends Model
 
     public function classes(): BelongsToMany
     {
-        return $this->belongsToMany(Classes::class, 'module_classes');
+        return $this->belongsToMany(Classes::class, 'module_classes', 'module_id', 'class_id');
     }
 
     public function courseEnrollments(): HasMany
