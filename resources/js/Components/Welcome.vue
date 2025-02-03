@@ -4,129 +4,191 @@ import ApplicationLogo from "@/Components/ApplicationLogo.vue";
 
 <template>
     <div>
-        <div class="p-6 lg:p-8 bg-white border-b border-gray-200">
-            <ApplicationLogo class="block h-12 w-auto" />
+        <!-- Hero section -->
+        <div
+            class="relative overflow-hidden bg-gradient-to-br from-indigo-600 to-indigo-800"
+        >
+            <div class="p-8 lg:p-12">
+                <div class="mx-auto max-w-7xl">
+                    <div class="mt-12 text-center">
+                        <h1
+                            class="text-4xl font-bold tracking-tight text-white sm:text-5xl"
+                        >
+                            Évaluations des Enseignements
+                        </h1>
+                        <p class="mt-6 text-lg leading-8 text-gray-100">
+                            Améliorons ensemble la qualité de nos formations à
+                            travers vos retours constructifs.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-            <h1 class="mt-8 text-2xl font-medium text-gray-900">
-                Bienvenue sur l'application d'évaluation des enseignements
-            </h1>
-
-            <p class="mt-6 text-gray-500 leading-relaxed">
-                Cette plateforme permet aux étudiants d'évaluer leurs modules
-                d'enseignement de manière anonyme. Les retours constructifs nous
-                aident à améliorer continuellement la qualité de nos formations.
-            </p>
+            <!-- Vague décorative -->
+            <div
+                class="absolute bottom-0 left-0 right-0 w-full overflow-hidden"
+            >
+                <svg
+                    class="relative block w-[calc(100%+1.3px)] h-[70px]"
+                    viewBox="0 0 1440 74"
+                    preserveAspectRatio="none"
+                >
+                    <path
+                        class="fill-white"
+                        d="M0,32L60,37.3C120,43,240,53,360,58.7C480,64,600,64,720,58.7C840,53,960,43,1080,42.7C1200,43,1320,53,1380,58.7L1440,64L1440,74L1380,74C1320,74,1200,74,1080,74C960,74,840,74,720,74C600,74,480,74,360,74C240,74,120,74,60,74L0,74Z"
+                    ></path>
+                </svg>
+            </div>
         </div>
 
-        <div
-            class="bg-gray-200 bg-opacity-25 grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 p-6 lg:p-8"
-        >
-            <div>
-                <div class="flex items-center">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        class="size-6 stroke-gray-400"
+        <!-- Features grid -->
+        <div class="bg-white py-12">
+            <div class="mx-auto max-w-7xl px-6 lg:px-8">
+                <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-12">
+                    <!-- Évaluations Anonymes -->
+                    <div
+                        class="rounded-xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md"
                     >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                        />
-                    </svg>
-                    <h2 class="ms-3 text-xl font-semibold text-gray-900">
-                        Évaluations Anonymes
-                    </h2>
-                </div>
+                        <div class="flex items-center">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-600"
+                            >
+                                <svg
+                                    class="h-6 w-6 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                    />
+                                </svg>
+                            </div>
+                            <h2
+                                class="ml-4 text-xl font-semibold text-gray-900"
+                            >
+                                Anonymat Garanti
+                            </h2>
+                        </div>
 
-                <p class="mt-4 text-gray-500 text-sm leading-relaxed">
-                    Vos évaluations sont totalement anonymes. Nous garantissons
-                    la confidentialité de vos retours pour vous permettre de
-                    vous exprimer librement sur la qualité des enseignements
-                    reçus.
-                </p>
-            </div>
+                        <p class="mt-4 text-gray-600">
+                            Exprimez-vous librement sur la qualité des
+                            enseignements. Vos commentaires sont automatiquement
+                            anonymisés pour garantir votre confidentialité.
+                        </p>
+                    </div>
 
-            <div>
-                <div class="flex items-center">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        class="size-6 stroke-gray-400"
+                    <!-- Processus Simple -->
+                    <div
+                        class="rounded-xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md"
                     >
-                        <path
-                            stroke-linecap="round"
-                            d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z"
-                        />
-                    </svg>
-                    <h2 class="ms-3 text-xl font-semibold text-gray-900">
-                        Processus Simple
-                    </h2>
-                </div>
+                        <div class="flex items-center">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-600"
+                            >
+                                <svg
+                                    class="h-6 w-6 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M5 13l4 4L19 7"
+                                    />
+                                </svg>
+                            </div>
+                            <h2
+                                class="ml-4 text-xl font-semibold text-gray-900"
+                            >
+                                Évaluation Simplifiée
+                            </h2>
+                        </div>
 
-                <p class="mt-4 text-gray-500 text-sm leading-relaxed">
-                    Une interface intuitive vous permet d'évaluer rapidement vos
-                    modules. Notez et commentez chaque enseignement en quelques
-                    clics après avoir reçu votre invitation par email.
-                </p>
-            </div>
+                        <p class="mt-4 text-gray-600">
+                            Un processus en quelques clics : recevez votre
+                            invitation, connectez-vous et évaluez rapidement vos
+                            modules d'enseignement.
+                        </p>
+                    </div>
 
-            <div>
-                <div class="flex items-center">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        class="size-6 stroke-gray-400"
+                    <!-- Amélioration Continue -->
+                    <div
+                        class="rounded-xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md"
                     >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
-                        />
-                    </svg>
-                    <h2 class="ms-3 text-xl font-semibold text-gray-900">
-                        Amélioration Continue
-                    </h2>
-                </div>
+                        <div class="flex items-center">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-600"
+                            >
+                                <svg
+                                    class="h-6 w-6 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                                    />
+                                </svg>
+                            </div>
+                            <h2
+                                class="ml-4 text-xl font-semibold text-gray-900"
+                            >
+                                Impact Concret
+                            </h2>
+                        </div>
 
-                <p class="mt-4 text-gray-500 text-sm leading-relaxed">
-                    Vos retours sont précieux pour améliorer la qualité des
-                    enseignements. Ils permettent d'identifier les points forts
-                    et les axes d'amélioration de chaque module.
-                </p>
-            </div>
+                        <p class="mt-4 text-gray-600">
+                            Vos retours permettent d'améliorer concrètement la
+                            qualité des formations et d'adapter les
+                            enseignements aux besoins des étudiants.
+                        </p>
+                    </div>
 
-            <div>
-                <div class="flex items-center">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke-width="1.5"
-                        class="size-6 stroke-gray-400"
+                    <!-- Sécurité -->
+                    <div
+                        class="rounded-xl bg-gray-50 p-8 shadow-sm ring-1 ring-gray-200 transition-all hover:shadow-md"
                     >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-                        />
-                    </svg>
-                    <h2 class="ms-3 text-xl font-semibold text-gray-900">
-                        Sécurité
-                    </h2>
-                </div>
+                        <div class="flex items-center">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-600"
+                            >
+                                <svg
+                                    class="h-6 w-6 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                    />
+                                </svg>
+                            </div>
+                            <h2
+                                class="ml-4 text-xl font-semibold text-gray-900"
+                            >
+                                Accès Sécurisé
+                            </h2>
+                        </div>
 
-                <p class="mt-4 text-gray-500 text-sm leading-relaxed">
-                    L'accès aux évaluations est sécurisé par des tokens uniques
-                    envoyés par email. Seuls les étudiants inscrits aux modules
-                    peuvent participer aux évaluations.
-                </p>
+                        <p class="mt-4 text-gray-600">
+                            Système d'invitation par token unique et accès
+                            restreint aux étudiants inscrits pour garantir
+                            l'intégrité des évaluations.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
