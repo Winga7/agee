@@ -95,7 +95,8 @@ const submitForm = () => {
 
 const confirmDelete = (group) => {
   if (confirm("Êtes-vous sûr de vouloir supprimer cette classe ?")) {
-    useForm().delete(route("classes.destroy", group));
+    const deleteForm = useForm({});
+    deleteForm.delete(route("classes.destroy", group.id));
   }
 };
 </script>
