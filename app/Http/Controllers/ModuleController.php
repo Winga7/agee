@@ -47,14 +47,17 @@ class ModuleController extends Controller
       'description' => 'required|string',
       'code' => 'required|string|max:50|unique:modules,code',
       'class_ids' => 'required|array',
-      'class_ids.*' => 'exists:class_groups,id'
+      'class_ids.*' => 'exists:class_groups,id',
+      'professor_id' => 'nullable|exists:professors,id'
     ]);
 
     try {
+      // Créer le module avec toutes les données validées
       $module = Module::create([
         'title' => $validated['title'],
         'description' => $validated['description'],
-        'code' => $validated['code']
+        'code' => $validated['code'],
+        'professor_id' => $validated['professor_id'] // S'assurer que cette ligne est présente
       ]);
 
       // Attacher les classes au module

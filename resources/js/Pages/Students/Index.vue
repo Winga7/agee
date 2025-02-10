@@ -304,7 +304,7 @@ const viewDetails = (student) => {
               <InputLabel for="schoolemail" value="School-Email" />
               <TextInput
                 id="schoolemail"
-                v-model="form.email"
+                v-model="form.school_email"
                 type="email"
                 class="mt-1 block w-full"
                 required
