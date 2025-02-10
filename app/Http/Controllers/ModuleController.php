@@ -19,7 +19,7 @@ class ModuleController extends Controller
     return Inertia::render('Modules/Index', [
       'modules' => Module::with(['professor', 'classes'])->get(),
       'professors' => Professor::all(),
-      'classes' => Classes::all()
+      'classGroups' => Classes::all()
     ]);
   }
 
@@ -47,7 +47,7 @@ class ModuleController extends Controller
       'description' => 'nullable|string',
       'professor_id' => 'nullable|exists:professors,id',
       'class_ids' => 'required|array|min:1',
-      'class_ids.*' => 'required|exists:class_groups,id'
+      'class_ids.*' => 'required|exists:classes,id'
     ]);
 
     $module = Module::create($request->except('class_ids'));
