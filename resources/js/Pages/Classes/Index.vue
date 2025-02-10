@@ -8,6 +8,8 @@ import PrimaryButton from "@/Components/PrimaryButton.vue";
 import InputLabel from "@/Components/InputLabel.vue";
 import TextInput from "@/Components/TextInput.vue";
 import InputError from "@/Components/InputError.vue";
+import SortableColumn from "@/Components/SortableColumn.vue";
+import SearchFilter from "@/Components/SearchFilter.vue";
 
 const props = defineProps({
   classGroups: Array,
@@ -16,6 +18,8 @@ const props = defineProps({
 
 const showCreateModal = ref(false);
 const isEditing = ref(false);
+const searchQuery = ref("");
+const currentSort = ref({ field: "name", direction: "asc" });
 
 const form = useForm({
   name: "",
@@ -31,6 +35,31 @@ const modulesByClass = computed(() => {
   });
   return groupedModules;
 });
+
+// Filtrage et tri des classes
+const filteredAndSortedClasses = computed(() => {
+  let result = [...props.classGroups];
+
+  // Filtrage
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter((group) => group.toLowerCase().includes(query));
+  }
+
+  // Tri
+  result.sort((a, b) => {
+    if (currentSort.value.direction === "asc") {
+      return a > b ? 1 : -1;
+    }
+    return a < b ? 1 : -1;
+  });
+
+  return result;
+});
+
+const handleSort = (sortData) => {
+  currentSort.value = sortData;
+};
 
 const editClass = (group) => {
   isEditing.value = true;
@@ -83,14 +112,21 @@ const confirmDelete = (group) => {
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
+          <!-- Ajout du composant de recherche -->
+          <SearchFilter
+            placeholder="Rechercher une classe..."
+            @search="(query) => (searchQuery = query)"
+          />
+
           <table class="min-w-full divide-y divide-gray-200">
             <thead>
               <tr>
-                <th
-                  class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Nom de la classe
-                </th>
+                <SortableColumn
+                  label="Nom de la classe"
+                  field="name"
+                  :current-sort="currentSort"
+                  @sort="handleSort"
+                />
                 <th
                   class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
@@ -104,7 +140,7 @@ const confirmDelete = (group) => {
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="group in classGroups" :key="group">
+              <tr v-for="group in filteredAndSortedClasses" :key="group">
                 <td class="px-6 py-4 whitespace-nowrap">{{ group }}</td>
                 <td class="px-6 py-4">
                   <span
