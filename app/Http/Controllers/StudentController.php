@@ -26,14 +26,18 @@ class StudentController extends Controller
             'first_name' => $student->first_name,
             'last_name' => $student->last_name,
             'email' => $student->email,
+            'school_email' => $student->school_email,
+            'telephone' => $student->telephone,
+            'birth_date' => $student->birth_date,
             'student_number' => $student->student_id,
             'class' => $student->class,
+            'academic_year' => $student->academic_year,
+            'status' => $student->status,
             'courseEnrollments' => $student->courseEnrollments
           ];
         }),
       'modules' => Module::all(),
-      'classes' => Classes::all(),
-      'classGroups' => DB::table('class_groups')->pluck('name')
+      'classes' => DB::table('class_groups')->get()
     ]);
   }
 
@@ -117,7 +121,7 @@ class StudentController extends Controller
 
   public function enroll(Request $request)
   {
-    $request->validate([
+    $validated = $request->validate([
       'student_id' => 'required|exists:students,id',
       'module_id' => 'required|exists:modules,id',
       'class_id' => 'required|exists:class_groups,id',
@@ -125,7 +129,7 @@ class StudentController extends Controller
       'end_date' => 'required|date|after:start_date',
     ]);
 
-    CourseEnrollment::create($request->all());
+    CourseEnrollment::create($validated);
     return back()->with('success', 'Inscription créée avec succès');
   }
 }

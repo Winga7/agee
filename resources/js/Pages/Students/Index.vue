@@ -14,22 +14,13 @@ import SearchFilter from "@/Components/SearchFilter.vue";
 import StudentDetailsModal from "@/Components/StudentDetailsModal.vue";
 
 const props = defineProps({
-  students: {
-    type: Array,
-    required: true,
-  },
-  modules: {
-    type: Array,
-    required: true,
-  },
+  students: Array,
+  modules: Array,
   classes: {
     type: Array,
     required: true,
   },
-  classGroups: {
-    type: Array,
-    required: true,
-  },
+  classGroups: Array,
 });
 
 const showCreateModal = ref(false);
@@ -55,9 +46,9 @@ const form = useForm({
 });
 
 const enrollmentForm = useForm({
-  student_id: null,
+  student_id: "",
   module_id: "",
-  class_group: "",
+  class_id: "",
   start_date: "",
   end_date: "",
 });
@@ -124,10 +115,13 @@ const editStudent = (student) => {
   form.first_name = student.first_name;
   form.last_name = student.last_name;
   form.email = student.email;
-  form.school_email = student.school_email;
-  form.student_id = student.student_number;
+  form.school_email = student.school_email || "";
+  form.telephone = student.telephone || "";
   form.birth_date = student.birth_date;
-  form.telephone = student.phone_number || "";
+  form.student_id = student.student_number;
+  form.class_id = student.class?.id || "";
+  form.academic_year = student.academic_year;
+  form.status = student.status;
 
   isEditing.value = true;
   showCreateModal.value = true;
@@ -142,14 +136,22 @@ const confirmDelete = (student) => {
 
 const manageEnrollments = (student) => {
   selectedStudent.value = student;
+  enrollmentForm.student_id = student.id;
   showEnrollmentModal.value = true;
 };
 
 const submitEnrollment = () => {
+  console.log("Form data:", enrollmentForm.data());
   enrollmentForm.post(route("enrollments.store"), {
     onSuccess: () => {
+      console.log("Inscription réussie");
+      enrollmentForm.reset();
       showEnrollmentModal.value = false;
     },
+    onError: (errors) => {
+      console.error("Erreurs:", errors);
+    },
+    preserveScroll: true,
   });
 };
 
@@ -427,6 +429,7 @@ const viewDetails = (student) => {
               <select
                 v-model="enrollmentForm.module_id"
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                required
               >
                 <option value="">Sélectionner un module</option>
                 <option
@@ -437,42 +440,60 @@ const viewDetails = (student) => {
                   {{ module.title }}
                 </option>
               </select>
+              <InputError
+                :message="enrollmentForm.errors.module_id"
+                class="mt-2"
+              />
             </div>
 
             <div>
-              <InputLabel value="Classe" />
+              <InputLabel value="Groupe de classe" />
               <select
-                v-model="enrollmentForm.class_group"
+                v-model="enrollmentForm.class_id"
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                required
               >
-                <option value="">Sélectionner une classe</option>
+                <option value="">Sélectionner un groupe</option>
                 <option
-                  v-for="group in classGroups"
-                  :key="group"
-                  :value="group"
+                  v-for="classGroup in classes"
+                  :key="classGroup.id"
+                  :value="classGroup.id"
                 >
-                  {{ group }}
+                  {{ classGroup.name }}
                 </option>
               </select>
+              <InputError
+                :message="enrollmentForm.errors.class_id"
+                class="mt-2"
+              />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <InputLabel value="Date de début" />
-                <TextInput
-                  type="date"
-                  v-model="enrollmentForm.start_date"
-                  class="mt-1 block w-full"
-                />
-              </div>
-              <div>
-                <InputLabel value="Date de fin" />
-                <TextInput
-                  type="date"
-                  v-model="enrollmentForm.end_date"
-                  class="mt-1 block w-full"
-                />
-              </div>
+            <div>
+              <InputLabel value="Date de début" />
+              <TextInput
+                v-model="enrollmentForm.start_date"
+                type="date"
+                class="mt-1 block w-full"
+                required
+              />
+              <InputError
+                :message="enrollmentForm.errors.start_date"
+                class="mt-2"
+              />
+            </div>
+
+            <div>
+              <InputLabel value="Date de fin" />
+              <TextInput
+                v-model="enrollmentForm.end_date"
+                type="date"
+                class="mt-1 block w-full"
+                required
+              />
+              <InputError
+                :message="enrollmentForm.errors.end_date"
+                class="mt-2"
+              />
             </div>
           </div>
 
@@ -481,7 +502,11 @@ const viewDetails = (student) => {
               Annuler
             </SecondaryButton>
             <PrimaryButton type="submit" :disabled="enrollmentForm.processing">
-              Enregistrer l'inscription
+              {{
+                enrollmentForm.processing
+                  ? "Enregistrement..."
+                  : "Enregistrer l'inscription"
+              }}
             </PrimaryButton>
           </div>
         </form>

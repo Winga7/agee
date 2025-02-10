@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ClassController;
+use App\Http\Controllers\CourseEnrollmentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -77,3 +78,5 @@ Route::get('/evaluate/{token}', [EvaluationController::class, 'createWithToken']
   ->name('evaluations.create-with-token');
 Route::post('/evaluate/{token}', [EvaluationController::class, 'store'])
   ->name('evaluations.store-with-token');
+
+Route::post('/enrollments', [CourseEnrollmentController::class, 'store'])->name('enrollments.store');
