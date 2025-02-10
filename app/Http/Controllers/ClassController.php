@@ -2,51 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Classes;
+use App\Models\ClassGroup;
 use App\Models\Module;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ClassController extends Controller
 {
-    public function index()
-    {
-        return Inertia::render('Classes/Index', [
-            'classes' => Classes::with(['students', 'modules'])->get()
-        ]);
-    }
+  public function index()
+  {
+    return Inertia::render('Classes/Index', [
+      'classGroups' => ClassGroup::with('modules')->get(), // Chargez les relations
+      'modules' => Module::with('classes')->get()
+    ]);
+  }
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:classes'
-        ]);
+  public function store(Request $request)
+  {
+    $validated = $request->validate([
+      'name' => 'required|string|unique:class_groups,name'
+    ]);
 
-        Classes::create($validated);
-        return redirect()->back()->with('success', 'Classe créée avec succès');
-    }
+    // Selon votre structure de base de données, adaptez cette partie
+    DB::table('class_groups')->insert([
+      'name' => $validated['name'],
+      'created_at' => now(),
+      'updated_at' => now()
+    ]);
 
-    public function update(Request $request, Classes $class)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:classes,name,' . $class->id
-        ]);
+    return redirect()->back()->with('message', 'Classe créée avec succès');
+  }
 
-        $class->update($validated);
-        return redirect()->back()->with('success', 'Classe mise à jour avec succès');
-    }
+  public function update(Request $request, $className)
+  {
+    $validated = $request->validate([
+      'name' => 'required|string|unique:class_groups,name,' . $className . ',name'
+    ]);
 
-    public function destroy(Classes $class)
-    {
-        $class->delete();
-        return redirect()->back()->with('success', 'Classe supprimée avec succès');
-    }
+    DB::table('class_groups')
+      ->where('name', $className)
+      ->update([
+        'name' => $validated['name'],
+        'updated_at' => now()
+      ]);
 
-    public function show(Classes $class)
-    {
-        return Inertia::render('Classes/Show', [
-            'class' => $class->load(['students', 'modules']),
-            'modules' => Module::all()
-        ]);
-    }
+    return redirect()->back()->with('message', 'Classe mise à jour avec succès');
+  }
+
+  public function destroy(ClassGroup $class)
+  {
+    $class->delete();
+    return redirect()->back()->with('success', 'Classe supprimée avec succès');
+  }
+
+  public function show(ClassGroup $class)
+  {
+    return Inertia::render('Classes/Show', [
+      'class' => $class->load(['students', 'modules']),
+      'modules' => Module::all()
+    ]);
+  }
 }

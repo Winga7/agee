@@ -18,7 +18,8 @@ const isManagementActive = computed(() => {
   return (
     route().current("students.index") ||
     route().current("modules.index") ||
-    route().current("classes.index")
+    route().current("classes.index") ||
+    route().current("professors.index")
   );
 });
 
@@ -127,6 +128,16 @@ const logout = () => {
                         class="hover:bg-gray-100"
                       >
                         Gestion des Classes
+                      </DropdownLink>
+
+                      <DropdownLink
+                        :href="route('professors.index')"
+                        :class="{
+                          'bg-indigo-50': route().current('professors.index'),
+                        }"
+                        class="hover:bg-gray-100"
+                      >
+                        Gestion des Professeurs
                       </DropdownLink>
                     </template>
                   </Dropdown>
@@ -407,6 +418,13 @@ const logout = () => {
               :active="route().current('classes.index')"
             >
               Gestion des Classes
+            </ResponsiveNavLink>
+
+            <ResponsiveNavLink
+              :href="route('professors.index')"
+              :active="route().current('professors.index')"
+            >
+              Gestion des Professeurs
             </ResponsiveNavLink>
           </div>
 

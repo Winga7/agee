@@ -4,129 +4,143 @@ namespace App\Http\Controllers;
 
 use App\Models\Module;
 use App\Models\Professor;
-use App\Models\Classes;
+use App\Models\ClassGroup;
 use App\Models\CourseEnrollment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class ModuleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        return Inertia::render('Modules/Index', [
-            'modules' => Module::with(['professor', 'classes'])->get(),
-            'professors' => Professor::all(),
-            'classes' => Classes::all()
-        ]);
+  /**
+   * Display a listing of the resource.
+   */
+  public function index()
+  {
+    return Inertia::render('Modules/Index', [
+      'modules' => Module::with(['professor', 'classes'])->get(),
+      'professors' => Professor::all(),
+      'classGroups' => ClassGroup::all()
+    ]);
+  }
+
+  /**
+   * Show the form for creating a new resource.
+   */
+  public function create()
+  {
+    // On récupère la liste des professeurs pour peupler un select (optionnel)
+    $professors = Professor::all();
+
+    return Inertia::render('Modules/Create', [
+      'professors' => $professors,
+    ]);
+  }
+
+  /**
+   * Store a newly created resource in storage.
+   */
+  public function store(Request $request)
+  {
+    $validated = $request->validate([
+      'title' => 'required|string|max:255',
+      'description' => 'required|string',
+      'code' => 'required|string|max:50|unique:modules,code',
+      'class_ids' => 'required|array',
+      'class_ids.*' => 'exists:class_groups,id',
+      'professor_id' => 'nullable|exists:professors,id'
+    ]);
+
+    try {
+      // Créer le module avec toutes les données validées
+      $module = Module::create([
+        'title' => $validated['title'],
+        'description' => $validated['description'],
+        'code' => $validated['code'],
+        'professor_id' => $validated['professor_id'] // S'assurer que cette ligne est présente
+      ]);
+
+      // Attacher les classes au module
+      $module->classes()->attach($validated['class_ids']);
+
+      return redirect()->back()->with('success', 'Module créé avec succès');
+    } catch (\Exception $e) {
+      Log::error('Erreur lors de la création du module:', ['error' => $e->getMessage()]);
+      return redirect()->back()->with('error', 'Erreur lors de la création du module');
     }
+  }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        // On récupère la liste des professeurs pour peupler un select (optionnel)
-        $professors = Professor::all();
+  /**
+   * Display the specified resource.
+   */
+  public function show(Module $module)
+  {
+    return Inertia::render('Modules/Show', [
+      'module' => $module->load(['professor', 'classes', 'courseEnrollments.student'])
+    ]);
+  }
 
-        return Inertia::render('Modules/Create', [
-            'professors' => $professors,
-        ]);
-    }
+  /**
+   * Show the form for editing the specified resource.
+   */
+  public function edit(Module $module)
+  {
+    $professors = Professor::all();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:150',
-            'code' => 'nullable|string|max:50|unique:modules',
-            'description' => 'nullable|string',
-            'professor_id' => 'nullable|exists:professors,id',
-            'class_ids' => 'required|array|min:1',
-            'class_ids.*' => 'required|exists:classes,id'
-        ]);
+    return Inertia::render('Modules/Edit', [
+      'module'     => $module,
+      'professors' => $professors,
+    ]);
+  }
 
-        $module = Module::create($request->except('class_ids'));
-        $module->classes()->attach($request->class_ids);
+  /**
+   * Update the specified resource in storage.
+   */
+  public function update(Request $request, Module $module)
+  {
+    $validated = $request->validate([
+      'title' => 'required|string|max:150',
+      'code' => 'nullable|string|max:50|unique:modules,code,' . $module->id,
+      'description' => 'nullable|string',
+      'professor_id' => 'nullable|exists:professors,id',
+      'class_ids' => 'required|array|min:1',
+      'class_ids.*' => 'required|exists:class_groups,id'
+    ]);
 
-        return redirect()->back()->with('success', 'Module créé avec succès');
-    }
+    $module->update($request->except('class_ids'));
+    $module->classes()->sync($request->class_ids);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Module $module)
-    {
-        return Inertia::render('Modules/Show', [
-            'module' => $module->load(['professor', 'classes', 'courseEnrollments.student'])
-        ]);
-    }
+    return redirect()->back()->with('success', 'Module mis à jour avec succès');
+  }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Module $module)
-    {
-        $professors = Professor::all();
+  /**
+   * Remove the specified resource from storage.
+   */
+  public function destroy(Module $module)
+  {
+    $module->delete();
+    return redirect()->back()->with('success', 'Module supprimé avec succès');
+  }
 
-        return Inertia::render('Modules/Edit', [
-            'module'     => $module,
-            'professors' => $professors,
-        ]);
-    }
+  public function getGroups(Module $module)
+  {
+    // Récupérer tous les groupes distincts pour ce module
+    $groups = CourseEnrollment::where('module_id', $module->id)
+      ->select('class_group')
+      ->distinct()
+      ->get()
+      ->pluck('class_group');
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Module $module)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:150',
-            'code' => 'nullable|string|max:50|unique:modules,code,' . $module->id,
-            'description' => 'nullable|string',
-            'professor_id' => 'nullable|exists:professors,id',
-            'class_ids' => 'required|array|min:1',
-            'class_ids.*' => 'required|exists:classes,id'
-        ]);
+    // Récupérer tous les étudiants pour ce module, groupés par classe
+    $students = CourseEnrollment::where('module_id', $module->id)
+      ->with('student')
+      ->get()
+      ->unique('student_id') // Éviter les doublons d'étudiants
+      ->groupBy('class_group');
 
-        $module->update($request->except('class_ids'));
-        $module->classes()->sync($request->class_ids);
-
-        return redirect()->back()->with('success', 'Module mis à jour avec succès');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Module $module)
-    {
-        $module->delete();
-        return redirect()->back()->with('success', 'Module supprimé avec succès');
-    }
-
-    public function getGroups(Module $module)
-    {
-        // Récupérer tous les groupes distincts pour ce module
-        $groups = CourseEnrollment::where('module_id', $module->id)
-            ->select('class_group')
-            ->distinct()
-            ->get()
-            ->pluck('class_group');
-
-        // Récupérer tous les étudiants pour ce module, groupés par classe
-        $students = CourseEnrollment::where('module_id', $module->id)
-            ->with('student')
-            ->get()
-            ->unique('student_id') // Éviter les doublons d'étudiants
-            ->groupBy('class_group');
-
-        return response()->json([
-            'groups' => $groups,
-            'students' => $students
-        ]);
-    }
+    return response()->json([
+      'groups' => $groups,
+      'students' => $students
+    ]);
+  }
 }
