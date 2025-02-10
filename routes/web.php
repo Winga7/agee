@@ -57,6 +57,13 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         Route::post('/students/enroll', [StudentController::class, 'enroll'])->name('students.enroll');
         Route::resource('classes', ClassController::class);
     });
+
+    Route::middleware(['auth:sanctum', config('jetstream.auth_session')])
+        ->group(function () {
+            Route::post('/classes', [ClassController::class, 'store'])->name('classes.store');
+            Route::put('/classes/{class}', [ClassController::class, 'update'])->name('classes.update');
+            Route::delete('/classes/{class}', [ClassController::class, 'destroy'])->name('classes.destroy');
+        });
 });
 
 // Routes publiques pour les évaluations par token

@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
             'school_email' => 'p.dupont@ifosup.wavre.be',
             'telephone' => '0123456789',
             'adress' => '123 rue des Professeurs',
+            'birth_date' => '1980-01-01',
         ]);
 
         Professor::create([
@@ -45,6 +46,7 @@ class DatabaseSeeder extends Seeder
             'school_email' => 'm.martin@ifosup.wavre.be',
             'telephone' => '0123456788',
             'adress' => '456 avenue des Enseignants',
+            'birth_date' => '1985-01-01',
         ]);
 
         // Création des classes
@@ -79,6 +81,7 @@ class DatabaseSeeder extends Seeder
             'first_name' => 'Jean',
             'last_name' => 'Dupont',
             'email' => 'jean.dupont@example.com',
+            'birth_date' => '2000-01-01',
             'student_id' => 'STU001',
             'academic_year' => '2023-2024',
             'class_id' => $webDevClass->id
@@ -88,6 +91,7 @@ class DatabaseSeeder extends Seeder
             'first_name' => 'Marie',
             'last_name' => 'Martin',
             'email' => 'marie.martin@example.com',
+            'birth_date' => '2001-01-01',
             'student_id' => 'STU002',
             'academic_year' => '2023-2024',
             'class_id' => $webDevClass->id

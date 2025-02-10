@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('school_email')->unique()->nullable();
             $table->string('telephone')->nullable();
+            $table->date('birth_date');
             $table->string('student_id')->unique(); // Numéro d'étudiant
             $table->foreignId('class_id')->nullable()->constrained(); // Relation avec la classe actuelle
             $table->string('academic_year'); // ex: "2023-2024"

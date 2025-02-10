@@ -32,7 +32,7 @@ class ProfessorController extends Controller
             'school_email' => 'nullable|email|unique:professors',
             'telephone' => 'nullable|string',
             'adress' => 'nullable|string',
-            'department' => 'nullable|string|max:100'
+            'birth_date' => 'nullable|date',
         ]);
 
         Professor::create($validated);
@@ -65,7 +65,7 @@ class ProfessorController extends Controller
             'school_email' => 'nullable|email|unique:professors,school_email,' . $professor->id,
             'telephone' => 'nullable|string',
             'adress' => 'nullable|string',
-            'department' => 'nullable|string|max:100'
+            'birth_date' => 'nullable|date',
         ]);
 
         $professor->update($validated);
