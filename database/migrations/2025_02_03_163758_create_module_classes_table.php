@@ -11,14 +11,14 @@ return new class extends Migration
    */
   public function up(): void
   {
-    Schema::create('module_classes', function (Blueprint $table) {
+    Schema::create('module_class_group', function (Blueprint $table) {
       $table->id();
       $table->foreignId('module_id')->constrained()->onDelete('cascade');
-      $table->foreignId('class_id')->constrained('class_groups')->onDelete('cascade');
+      $table->foreignId('class_group_id')->constrained('class_groups')->onDelete('cascade');
       $table->timestamps();
 
       // Contrainte unique pour éviter les doublons
-      $table->unique(['module_id', 'class_id']);
+      $table->unique(['module_id', 'class_group_id']);
     });
   }
 
@@ -27,6 +27,6 @@ return new class extends Migration
    */
   public function down(): void
   {
-    Schema::dropIfExists('module_classes');
+    Schema::dropIfExists('module_class_group');
   }
 };

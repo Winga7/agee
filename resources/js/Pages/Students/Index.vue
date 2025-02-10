@@ -46,7 +46,7 @@ const form = useForm({
 });
 
 const enrollmentForm = useForm({
-  student_id: "",
+  student_id: selectedStudent?.id || "",
   module_id: "",
   class_id: "",
   start_date: "",
@@ -141,15 +141,10 @@ const manageEnrollments = (student) => {
 };
 
 const submitEnrollment = () => {
-  console.log("Form data:", enrollmentForm.data());
   enrollmentForm.post(route("enrollments.store"), {
     onSuccess: () => {
-      console.log("Inscription réussie");
-      enrollmentForm.reset();
       showEnrollmentModal.value = false;
-    },
-    onError: (errors) => {
-      console.error("Erreurs:", errors);
+      enrollmentForm.reset();
     },
     preserveScroll: true,
   });

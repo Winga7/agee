@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
-use App\Models\Classes;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+use App\Models\ClassGroup;
 use App\Models\Module;
 use App\Models\CourseEnrollment;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class StudentController extends Controller
 {
@@ -37,7 +36,7 @@ class StudentController extends Controller
           ];
         }),
       'modules' => Module::all(),
-      'classes' => DB::table('class_groups')->get()
+      'classes' => ClassGroup::select('id', 'name')->get()
     ]);
   }
 

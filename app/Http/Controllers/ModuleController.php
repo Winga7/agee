@@ -7,6 +7,7 @@ use App\Models\Professor;
 use App\Models\Classes;
 use App\Models\CourseEnrollment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class ModuleController extends Controller
@@ -42,18 +43,28 @@ class ModuleController extends Controller
   public function store(Request $request)
   {
     $validated = $request->validate([
-      'title' => 'required|string|max:150',
-      'code' => 'nullable|string|max:50|unique:modules',
-      'description' => 'nullable|string',
-      'professor_id' => 'nullable|exists:professors,id',
-      'class_ids' => 'required|array|min:1',
-      'class_ids.*' => 'required|exists:classes,id'
+      'title' => 'required|string|max:255',
+      'description' => 'required|string',
+      'code' => 'required|string|max:50|unique:modules,code',
+      'class_ids' => 'required|array',
+      'class_ids.*' => 'exists:class_groups,id'
     ]);
 
-    $module = Module::create($request->except('class_ids'));
-    $module->classes()->attach($request->class_ids);
+    try {
+      $module = Module::create([
+        'title' => $validated['title'],
+        'description' => $validated['description'],
+        'code' => $validated['code']
+      ]);
 
-    return redirect()->back()->with('success', 'Module créé avec succès');
+      // Attacher les classes au module
+      $module->classes()->attach($validated['class_ids']);
+
+      return redirect()->back()->with('success', 'Module créé avec succès');
+    } catch (\Exception $e) {
+      Log::error('Erreur lors de la création du module:', ['error' => $e->getMessage()]);
+      return redirect()->back()->with('error', 'Erreur lors de la création du module');
+    }
   }
 
   /**

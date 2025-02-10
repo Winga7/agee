@@ -10,34 +10,34 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Module extends Model
 {
-    use HasFactory;
+  use HasFactory;
 
-    protected $fillable = [
-        'title',
-        'code',
-        'professor_id',
-        'description'
-    ];
+  protected $fillable = [
+    'title',
+    'description',
+    'code',
+    'professor_id'
+  ];
 
-    // Relation : un module appartient à un Professeur
-    public function professor(): BelongsTo
-    {
-        return $this->belongsTo(Professor::class, 'professor_id');
-    }
+  // Relation : un module appartient à un Professeur
+  public function professor(): BelongsTo
+  {
+    return $this->belongsTo(Professor::class, 'professor_id');
+  }
 
-    // Relation : un module a plusieurs évaluations
-    public function evaluations(): HasMany
-    {
-        return $this->hasMany(Evaluation::class);
-    }
+  // Relation : un module a plusieurs évaluations
+  public function evaluations(): HasMany
+  {
+    return $this->hasMany(Evaluation::class);
+  }
 
-    public function classes(): BelongsToMany
-    {
-        return $this->belongsToMany(Classes::class, 'module_classes', 'module_id', 'class_id');
-    }
+  public function classes()
+  {
+    return $this->belongsToMany(ClassGroup::class, 'module_class_group', 'module_id', 'class_group_id');
+  }
 
-    public function courseEnrollments(): HasMany
-    {
-        return $this->hasMany(CourseEnrollment::class);
-    }
+  public function courseEnrollments(): HasMany
+  {
+    return $this->hasMany(CourseEnrollment::class);
+  }
 }
