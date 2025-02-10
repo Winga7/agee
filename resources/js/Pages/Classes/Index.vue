@@ -11,9 +11,16 @@ import InputError from "@/Components/InputError.vue";
 import SortableColumn from "@/Components/SortableColumn.vue";
 import SearchFilter from "@/Components/SearchFilter.vue";
 
+// Modifiez la prop pour accepter les objets complets
 const props = defineProps({
-  classGroups: Array,
-  modules: Array,
+  classGroups: {
+    type: Array,
+    required: true,
+  },
+  modules: {
+    type: Array,
+    required: true,
+  },
 });
 
 const showCreateModal = ref(false);
@@ -26,32 +33,29 @@ const form = useForm({
   oldName: "",
 });
 
+// Modifiez la computed property pour utiliser la nouvelle structure
 const modulesByClass = computed(() => {
   const groupedModules = {};
-  props.classGroups.forEach((group) => {
-    groupedModules[group] = props.modules.filter((module) =>
-      module.classes.some((c) => c.class_group === group)
-    );
+  props.classGroups.forEach((classGroup) => {
+    groupedModules[classGroup.name] = classGroup.modules || [];
   });
   return groupedModules;
 });
 
-// Filtrage et tri des classes
+// Modifiez le filtrage pour utiliser la nouvelle structure
 const filteredAndSortedClasses = computed(() => {
-  let result = [...props.classGroups];
+  let result = props.classGroups;
 
-  // Filtrage
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    result = result.filter((group) => group.toLowerCase().includes(query));
+    result = result.filter((group) => group.name.toLowerCase().includes(query));
   }
 
-  // Tri
   result.sort((a, b) => {
     if (currentSort.value.direction === "asc") {
-      return a > b ? 1 : -1;
+      return a.name > b.name ? 1 : -1;
     }
-    return a < b ? 1 : -1;
+    return a.name < b.name ? 1 : -1;
   });
 
   return result;
@@ -140,15 +144,16 @@ const confirmDelete = (group) => {
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="group in filteredAndSortedClasses" :key="group">
-                <td class="px-6 py-4 whitespace-nowrap">{{ group }}</td>
+              <!-- Modifiez la boucle pour utiliser la nouvelle structure -->
+              <tr v-for="group in filteredAndSortedClasses" :key="group.id">
+                <td class="px-6 py-4 whitespace-nowrap">{{ group.name }}</td>
                 <td class="px-6 py-4">
                   <span
-                    v-for="moduleClass in modulesByClass[group]"
-                    :key="moduleClass.id"
+                    v-for="module in group.modules"
+                    :key="module.id"
                     class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2 mb-1"
                   >
-                    {{ moduleClass.title }}
+                    {{ module.title }}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">

@@ -13,7 +13,7 @@ class ClassController extends Controller
   public function index()
   {
     return Inertia::render('Classes/Index', [
-      'classGroups' => DB::table('class_groups')->pluck('name'),
+      'classGroups' => ClassGroup::with('modules')->get(), // Chargez les relations
       'modules' => Module::with('classes')->get()
     ]);
   }
