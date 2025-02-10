@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Modal from "@/Components/Modal.vue";
@@ -9,6 +9,9 @@ import DangerButton from "@/Components/DangerButton.vue";
 import InputLabel from "@/Components/InputLabel.vue";
 import TextInput from "@/Components/TextInput.vue";
 import InputError from "@/Components/InputError.vue";
+import SortableColumn from "@/Components/SortableColumn.vue";
+import SearchFilter from "@/Components/SearchFilter.vue";
+import StudentDetailsModal from "@/Components/StudentDetailsModal.vue";
 
 const props = defineProps({
   students: {
@@ -33,6 +36,9 @@ const showCreateModal = ref(false);
 const isEditing = ref(false);
 const showEnrollmentModal = ref(false);
 const selectedStudent = ref(null);
+const showDetailsModal = ref(false);
+const searchQuery = ref("");
+const currentSort = ref({ field: "last_name", direction: "asc" });
 
 const form = useForm({
   id: null,
@@ -55,6 +61,40 @@ const enrollmentForm = useForm({
   start_date: "",
   end_date: "",
 });
+
+// Filtrage et tri des étudiants
+const filteredAndSortedStudents = computed(() => {
+  let result = [...props.students];
+
+  // Filtrage
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (student) =>
+        student.first_name.toLowerCase().includes(query) ||
+        student.last_name.toLowerCase().includes(query) ||
+        student.email.toLowerCase().includes(query) ||
+        student.student_number.toLowerCase().includes(query)
+    );
+  }
+
+  // Tri
+  result.sort((a, b) => {
+    const aValue = a[currentSort.value.field];
+    const bValue = b[currentSort.value.field];
+
+    if (currentSort.value.direction === "asc") {
+      return aValue > bValue ? 1 : -1;
+    }
+    return aValue < bValue ? 1 : -1;
+  });
+
+  return result;
+});
+
+const handleSort = (sortData) => {
+  currentSort.value = sortData;
+};
 
 const resetForm = () => {
   form.reset();
@@ -112,6 +152,11 @@ const submitEnrollment = () => {
     },
   });
 };
+
+const viewDetails = (student) => {
+  selectedStudent.value = student;
+  showDetailsModal.value = true;
+};
 </script>
 
 <template>
@@ -130,6 +175,11 @@ const submitEnrollment = () => {
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
+          <SearchFilter
+            placeholder="Rechercher un étudiant..."
+            @search="(query) => (searchQuery = query)"
+          />
+
           <div
             v-if="students.length === 0"
             class="text-center text-gray-500 py-8"
@@ -141,60 +191,64 @@ const submitEnrollment = () => {
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Nom
-                  </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Numéro étudiant
-                  </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Email
-                  </th>
-                  <th
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Actions
-                  </th>
+                  <SortableColumn
+                    label="Nom"
+                    field="last_name"
+                    :current-sort="currentSort"
+                    @sort="handleSort"
+                  />
+                  <SortableColumn
+                    label="Prénom"
+                    field="first_name"
+                    :current-sort="currentSort"
+                    @sort="handleSort"
+                  />
+                  <SortableColumn
+                    label="Email"
+                    field="email"
+                    :current-sort="currentSort"
+                    @sort="handleSort"
+                  />
+                  <SortableColumn
+                    label="N° Étudiant"
+                    field="student_number"
+                    :current-sort="currentSort"
+                    @sort="handleSort"
+                  />
+                  <th class="px-6 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="student in students" :key="student.id">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ student.last_name }} {{ student.first_name }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ student.student_number }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    {{ student.email }}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex space-x-2">
-                      <button
-                        @click="editStudent(student)"
-                        class="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Modifier
-                      </button>
-                      <button
-                        @click="manageEnrollments(student)"
-                        class="text-green-600 hover:text-green-900"
-                      >
-                        Inscriptions
-                      </button>
-                      <button
-                        @click="confirmDelete(student)"
-                        class="text-red-600 hover:text-red-900"
-                      >
-                        Supprimer
-                      </button>
-                    </div>
+                <tr
+                  v-for="student in filteredAndSortedStudents"
+                  :key="student.id"
+                >
+                  <td class="px-6 py-4">{{ student.last_name }}</td>
+                  <td class="px-6 py-4">{{ student.first_name }}</td>
+                  <td class="px-6 py-4">{{ student.email }}</td>
+                  <td class="px-6 py-4">{{ student.student_number }}</td>
+                  <td class="px-6 py-4 space-x-2">
+                    <PrimaryButton @click="viewDetails(student)">
+                      Voir détails
+                    </PrimaryButton>
+                    <button
+                      @click="editStudent(student)"
+                      class="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Modifier
+                    </button>
+                    <button
+                      @click="manageEnrollments(student)"
+                      class="text-green-600 hover:text-green-900"
+                    >
+                      Inscriptions
+                    </button>
+                    <button
+                      @click="confirmDelete(student)"
+                      class="text-red-600 hover:text-red-900"
+                    >
+                      Supprimer
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -433,5 +487,12 @@ const submitEnrollment = () => {
         </form>
       </div>
     </Modal>
+
+    <!-- Modal de détails de l'étudiant -->
+    <StudentDetailsModal
+      :show="showDetailsModal"
+      :student="selectedStudent"
+      @close="showDetailsModal = false"
+    />
   </AppLayout>
 </template>
