@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Module;
 use App\Models\Professor;
-use App\Models\Classes;
+use App\Models\ClassGroup;
 use App\Models\CourseEnrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +20,7 @@ class ModuleController extends Controller
     return Inertia::render('Modules/Index', [
       'modules' => Module::with(['professor', 'classes'])->get(),
       'professors' => Professor::all(),
-      'classGroups' => Classes::all()
+      'classGroups' => ClassGroup::all()
     ]);
   }
 

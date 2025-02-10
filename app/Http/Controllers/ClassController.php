@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Classes;
+use App\Models\ClassGroup;
 use App\Models\Module;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,13 +50,13 @@ class ClassController extends Controller
     return redirect()->back()->with('message', 'Classe mise à jour avec succès');
   }
 
-  public function destroy(Classes $class)
+  public function destroy(ClassGroup $class)
   {
     $class->delete();
     return redirect()->back()->with('success', 'Classe supprimée avec succès');
   }
 
-  public function show(Classes $class)
+  public function show(ClassGroup $class)
   {
     return Inertia::render('Classes/Show', [
       'class' => $class->load(['students', 'modules']),
