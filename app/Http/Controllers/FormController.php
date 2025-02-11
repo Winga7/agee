@@ -24,62 +24,62 @@ class FormController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'banner_image' => 'nullable|image|max:2048',
-            'sections' => 'required|array|min:1',
-            'sections.*.title' => 'required|string|max:255',
-            'sections.*.description' => 'nullable|string',
-            'sections.*.order' => 'required|integer',
-            'sections.*.depends_on_question_id' => 'nullable|integer',
-            'sections.*.depends_on_answer' => 'nullable|string',
-            'sections.*.questions' => 'required|array|min:1',
-            'sections.*.questions.*.question' => 'required|string',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,rating',
-            'sections.*.questions.*.options' => 'nullable|array',
-            'sections.*.questions.*.order' => 'required|integer',
-            'sections.*.questions.*.is_required' => 'boolean',
-            'sections.*.questions.*.controls_visibility' => 'boolean'
-        ]);
-
         try {
             DB::beginTransaction();
 
-            // Créer le formulaire
+            // 1. Créer le formulaire
             $form = Form::create([
-                'title' => $validated['title'],
-                'description' => $validated['description'],
+                'title' => $request->title,
+                'description' => $request->description,
                 'is_active' => true
             ]);
 
-            // Gérer l'upload de l'image bannière
-            if ($request->hasFile('banner_image')) {
-                $path = $request->file('banner_image')->store('form-banners', 'public');
-                $form->update(['banner_image' => $path]);
-            }
-
-            // Créer les sections et leurs questions
-            foreach ($validated['sections'] as $sectionData) {
+            // 2. Créer les sections et questions sans dépendances
+            $sectionsMap = [];
+            foreach ($request->sections as $sectionData) {
+                // Créer la section sans dépendance pour l'instant
                 $section = $form->sections()->create([
                     'title' => $sectionData['title'],
                     'description' => $sectionData['description'] ?? null,
                     'order' => $sectionData['order'],
-                    'depends_on_question_id' => $sectionData['depends_on_question_id'] ?? null,
-                    'depends_on_answer' => $sectionData['depends_on_answer'] ?? null
+                    'depends_on_question_id' => null,
+                    'depends_on_answer' => null
                 ]);
 
                 // Créer les questions pour cette section
                 foreach ($sectionData['questions'] as $questionData) {
-                    Question::create([
+                    $question = $section->questions()->create([
                         'form_id' => $form->id,
-                        'form_section_id' => $section->id,
                         'question' => $questionData['question'],
                         'type' => $questionData['type'],
-                        'options' => $questionData['options'] ?? null,
+                        'options' => $questionData['options'] ?? [],
                         'order' => $questionData['order'],
-                        'is_required' => $questionData['is_required'] ?? true,
-                        'controls_visibility' => $questionData['controls_visibility'] ?? false
+                        'is_required' => $questionData['is_required'],
+                        'controls_visibility' => $questionData['controls_visibility']
+                    ]);
+
+                    // Stocker la correspondance entre l'ID temporaire et l'ID réel
+                    if (isset($questionData['id'])) {
+                        $sectionsMap[$questionData['id']] = $question->id;
+                    }
+                }
+
+                // Stocker les infos de dépendance pour mise à jour ultérieure
+                if (!empty($sectionData['depends_on_question_id'])) {
+                    $sectionsToUpdate[] = [
+                        'section' => $section,
+                        'temp_question_id' => $sectionData['depends_on_question_id'],
+                        'answer' => $sectionData['depends_on_answer']
+                    ];
+                }
+            }
+
+            // 3. Mettre à jour les dépendances des sections
+            foreach ($sectionsToUpdate ?? [] as $sectionInfo) {
+                if (isset($sectionsMap[$sectionInfo['temp_question_id']])) {
+                    $sectionInfo['section']->update([
+                        'depends_on_question_id' => $sectionsMap[$sectionInfo['temp_question_id']],
+                        'depends_on_answer' => $sectionInfo['answer']
                     ]);
                 }
             }
@@ -97,75 +97,74 @@ class FormController extends Controller
 
     public function update(Request $request, Form $form)
     {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'banner_image' => 'nullable|image|max:2048',
-            'sections' => 'required|array|min:1',
-            'sections.*.title' => 'required|string|max:255',
-            'sections.*.description' => 'nullable|string',
-            'sections.*.order' => 'required|integer',
-            'sections.*.depends_on_question_id' => 'nullable|integer',
-            'sections.*.depends_on_answer' => 'nullable|string',
-            'sections.*.questions' => 'required|array|min:1',
-            'sections.*.questions.*.question' => 'required|string',
-            'sections.*.questions.*.type' => 'required|in:text,textarea,radio,checkbox,select,rating',
-            'sections.*.questions.*.options' => 'nullable|array',
-            'sections.*.questions.*.order' => 'required|integer',
-            'sections.*.questions.*.is_required' => 'boolean',
-            'sections.*.questions.*.controls_visibility' => 'boolean'
-        ]);
-
         try {
             DB::beginTransaction();
 
-            // Gérer l'image bannière
-            if ($request->hasFile('banner_image')) {
-                if ($form->banner_image) {
-                    Storage::disk('public')->delete($form->banner_image);
-                }
-                $bannerPath = $request->file('banner_image')->store('form-banners', 'public');
-                $form->banner_image = $bannerPath;
-                $form->save();
-            }
-
+            // 1. Mise à jour du formulaire principal
             $form->update([
-                'title' => $validated['title'],
-                'description' => $validated['description']
+                'title' => $request->title,
+                'description' => $request->description,
             ]);
 
-            // Supprimer les anciennes sections et questions
+            // 2. Supprimer toutes les sections existantes et leurs questions
             $form->sections()->delete();
 
-            // Recréer les sections et questions
-            foreach ($validated['sections'] as $sectionData) {
+            // 3. Créer les nouvelles sections sans dépendances
+            $sectionsMap = [];
+            foreach ($request->sections as $sectionData) {
                 $section = $form->sections()->create([
                     'title' => $sectionData['title'],
                     'description' => $sectionData['description'] ?? null,
                     'order' => $sectionData['order'],
-                    'depends_on_question_id' => $sectionData['depends_on_question_id'] ?? null,
-                    'depends_on_answer' => $sectionData['depends_on_answer'] ?? null
+                    'depends_on_question_id' => null, // On le mettra à jour plus tard
+                    'depends_on_answer' => null
                 ]);
 
+                // Créer les questions pour cette section
                 foreach ($sectionData['questions'] as $questionData) {
-                    Question::create([
+                    $question = $section->questions()->create([
                         'form_id' => $form->id,
-                        'form_section_id' => $section->id,
                         'question' => $questionData['question'],
                         'type' => $questionData['type'],
-                        'options' => $questionData['options'] ?? null,
+                        'options' => $questionData['options'] ?? [],
                         'order' => $questionData['order'],
-                        'is_required' => $questionData['is_required'] ?? true,
-                        'controls_visibility' => $questionData['controls_visibility'] ?? false
+                        'is_required' => $questionData['is_required'],
+                        'controls_visibility' => $questionData['controls_visibility']
+                    ]);
+
+                    // Stocker la correspondance entre l'ID temporaire et l'ID réel
+                    if (isset($questionData['id'])) {
+                        $sectionsMap[$questionData['id']] = $question->id;
+                    }
+                }
+
+                if (!empty($sectionData['depends_on_question_id'])) {
+                    $sectionsToUpdate[] = [
+                        'section' => $section,
+                        'temp_question_id' => $sectionData['depends_on_question_id'],
+                        'answer' => $sectionData['depends_on_answer']
+                    ];
+                }
+            }
+
+            // 4. Mettre à jour les dépendances après que toutes les questions soient créées
+            foreach ($sectionsToUpdate ?? [] as $sectionInfo) {
+                if (isset($sectionsMap[$sectionInfo['temp_question_id']])) {
+                    $sectionInfo['section']->update([
+                        'depends_on_question_id' => $sectionsMap[$sectionInfo['temp_question_id']],
+                        'depends_on_answer' => $sectionInfo['answer']
                     ]);
                 }
             }
 
             DB::commit();
-            return back()->with('success', 'Formulaire mis à jour avec succès');
+            return redirect()->back()->with('success', 'Formulaire mis à jour avec succès');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Une erreur est survenue lors de la mise à jour du formulaire');
+            Log::error('Erreur lors de la mise à jour du formulaire: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Une erreur est survenue lors de la mise à jour du formulaire')
+                ->withInput();
         }
     }
 

@@ -14,13 +14,11 @@ const currentSection = ref(0);
 const answers = ref({});
 
 const currentSectionData = computed(() => {
-  if (!props.form || !props.form.sections) return null;
-  return props.form.sections[currentSection.value] || null;
+  return props.form?.sections[currentSection.value] || null;
 });
 
 const isLastSection = computed(() => {
-  if (!props.form || !props.form.sections) return true;
-  return currentSection.value === props.form.sections.length - 1;
+  return currentSection.value >= (props.form?.sections.length || 0) - 1;
 });
 
 const canProceed = computed(() => {
@@ -36,8 +34,71 @@ const canProceed = computed(() => {
 });
 
 const nextSection = () => {
-  if (canProceed.value && !isLastSection.value) {
-    currentSection.value++;
+  if (!canProceed.value || isLastSection.value) return;
+
+  // Trouver la prochaine section visible
+  let nextIndex = currentSection.value + 1;
+  while (nextIndex < props.form.sections.length) {
+    const section = props.form.sections[nextIndex];
+
+    // Si la section n'a pas de dépendance, elle est visible
+    if (!section.depends_on_question_id) {
+      currentSection.value = nextIndex;
+      break;
+    }
+
+    // Vérifier la condition de visibilité
+    let isVisible = false;
+    props.form.sections.forEach((s) => {
+      s.questions.forEach((q) => {
+        if (q.id === section.depends_on_question_id) {
+          isVisible = answers.value[q.id] === section.depends_on_answer;
+        }
+      });
+    });
+
+    if (isVisible) {
+      currentSection.value = nextIndex;
+      break;
+    }
+
+    // Si la section n'est pas visible, passer à la suivante
+    nextIndex++;
+  }
+};
+
+// Ajouter une nouvelle méthode previousSection
+const previousSection = () => {
+  if (currentSection.value <= 0) return;
+
+  // Trouver la section précédente visible
+  let prevIndex = currentSection.value - 1;
+  while (prevIndex >= 0) {
+    const section = props.form.sections[prevIndex];
+
+    // Si la section n'a pas de dépendance, elle est visible
+    if (!section.depends_on_question_id) {
+      currentSection.value = prevIndex;
+      break;
+    }
+
+    // Vérifier la condition de visibilité
+    let isVisible = false;
+    props.form.sections.forEach((s) => {
+      s.questions.forEach((q) => {
+        if (q.id === section.depends_on_question_id) {
+          isVisible = answers.value[q.id] === section.depends_on_answer;
+        }
+      });
+    });
+
+    if (isVisible) {
+      currentSection.value = prevIndex;
+      break;
+    }
+
+    // Si la section n'est pas visible, passer à la précédente
+    prevIndex--;
   }
 };
 
@@ -61,6 +122,31 @@ const resetPreview = () => {
 
 onMounted(() => {
   initializeAnswers();
+});
+
+const shouldShowSection = computed(() => {
+  if (!currentSectionData.value) return false;
+  if (!currentSectionData.value.depends_on_question_id) return true;
+
+  // Rechercher la question contrôlant la visibilité
+  let controllingQuestion = null;
+  for (const section of props.form.sections) {
+    for (const question of section.questions) {
+      if (question.id === currentSectionData.value.depends_on_question_id) {
+        controllingQuestion = question;
+        break;
+      }
+    }
+    if (controllingQuestion) break;
+  }
+
+  if (!controllingQuestion) return true;
+
+  // Vérifier si la réponse correspond
+  return (
+    answers.value[controllingQuestion.id] ===
+    currentSectionData.value.depends_on_answer
+  );
 });
 </script>
 
@@ -113,7 +199,7 @@ onMounted(() => {
         </div>
 
         <!-- Section courante -->
-        <div v-if="currentSectionData" class="mb-8">
+        <div v-if="currentSectionData && shouldShowSection" class="mb-8">
           <h3 class="text-xl font-semibold mb-4">
             {{ currentSectionData.title }}
           </h3>
@@ -239,7 +325,7 @@ onMounted(() => {
         <!-- Navigation -->
         <div class="flex justify-between">
           <SecondaryButton
-            @click="currentSection--"
+            @click="previousSection"
             :disabled="currentSection === 0"
           >
             Précédent

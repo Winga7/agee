@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Modal from "@/Components/Modal.vue";
@@ -34,10 +34,11 @@ const form = useForm({
       title: "",
       description: "",
       order: 0,
-      depends_on_question_id: null,
-      depends_on_answer: null,
+      depends_on_question_id: null, // S'assurer que c'est bien initialisé
+      depends_on_answer: null, // S'assurer que c'est bien initialisé
       questions: [
         {
+          id: Date.now(),
           question: "",
           type: "text",
           options: [],
@@ -50,8 +51,34 @@ const form = useForm({
   ],
 });
 
+watch(
+  () => form.sections,
+  (newSections) => {
+    console.log(
+      "Sections mises à jour:",
+      newSections.map((s) => ({
+        title: s.title,
+        depends_on_question_id: s.depends_on_question_id,
+        depends_on_answer: s.depends_on_answer,
+      }))
+    );
+  },
+  { deep: true }
+);
+
 const resetForm = () => {
   form.reset();
+  // Réinitialiser avec une seule section vide
+  form.sections = [
+    {
+      title: "",
+      description: "",
+      order: 0,
+      depends_on_question_id: null,
+      depends_on_answer: null,
+      questions: [],
+    },
+  ];
   isEditing.value = false;
   currentSection.value = 0;
 };
@@ -78,19 +105,20 @@ const removeSection = (index) => {
 // Méthodes pour la gestion des questions
 const addQuestion = (sectionIndex) => {
   form.sections[sectionIndex].questions.push({
+    id: Date.now(),
     question: "",
     type: "text",
     options: [],
     order: form.sections[sectionIndex].questions.length,
     is_required: true,
-    controls_visibility: false,
+    controls_visibility: false, // Initialisation explicite
   });
 };
 
 const removeQuestion = (sectionIndex, questionIndex) => {
   form.sections[sectionIndex].questions.splice(questionIndex, 1);
-  form.sections[sectionIndex].questions.forEach((question, idx) => {
-    question.order = idx;
+  form.sections.forEach((section, idx) => {
+    section.order = idx;
   });
 };
 
@@ -111,19 +139,46 @@ const removeOption = (sectionIndex, questionIndex, optionIndex) => {
 
 // Soumission du formulaire
 const submitForm = () => {
+  const formData = {
+    ...form,
+    sections: form.sections.map((section) => ({
+      ...section,
+      depends_on_question_id: section.depends_on_question_id || null,
+      depends_on_answer: section.depends_on_answer || null,
+      questions: section.questions.map((question) => ({
+        ...question,
+        controls_visibility: Boolean(question.controls_visibility),
+        is_required: Boolean(question.is_required),
+        options: Array.isArray(question.options) ? question.options : [],
+      })),
+    })),
+  };
+
   if (isEditing.value) {
     form.put(route("forms.update", form.id), {
+      ...formData,
       onSuccess: () => {
         resetForm();
         showCreateModal.value = false;
+        window.location.reload();
       },
+      onError: (errors) => {
+        console.error("Erreurs de validation:", errors);
+      },
+      preserveScroll: true,
     });
   } else {
     form.post(route("forms.store"), {
+      ...formData,
       onSuccess: () => {
         resetForm();
         showCreateModal.value = false;
+        window.location.reload();
       },
+      onError: (errors) => {
+        console.error("Erreurs de validation:", errors);
+      },
+      preserveScroll: true,
     });
   }
 };
@@ -135,37 +190,42 @@ const editForm = (formToEdit) => {
   form.title = formToEdit.title;
   form.description = formToEdit.description || "";
 
-  form.sections = formToEdit.sections?.length
-    ? formToEdit.sections.map((section) => ({
-        title: section.title || "",
-        description: section.description || "",
-        order: section.order || 0,
-        depends_on_question_id: section.depends_on_question_id || null,
-        depends_on_answer: section.depends_on_answer || null,
-        questions: section.questions?.length
-          ? section.questions.map((question) => ({
-              question: question.question || "",
-              type: question.type || "text",
-              options: Array.isArray(question.options) ? question.options : [],
-              order: question.order || 0,
-              is_required:
-                question.is_required !== undefined
-                  ? question.is_required
-                  : true,
-              controls_visibility: question.controls_visibility || false,
-            }))
-          : [],
-      }))
-    : [
-        {
-          title: "",
-          description: "",
-          order: 0,
-          depends_on_question_id: null,
-          depends_on_answer: null,
-          questions: [],
-        },
-      ];
+  // Modifier cette partie pour éviter la duplication
+  if (formToEdit.sections?.length) {
+    form.sections = formToEdit.sections.map((section) => ({
+      title: section.title || "",
+      description: section.description || "",
+      order: section.order || 0,
+      depends_on_question_id: section.depends_on_question_id || null,
+      depends_on_answer: section.depends_on_answer || null,
+      questions: section.questions?.length
+        ? section.questions.map((question) => ({
+            id: question.id || Date.now(),
+            question: question.question || "",
+            type: question.type || "text",
+            options: Array.isArray(question.options) ? question.options : [],
+            order: question.order || 0,
+            is_required:
+              question.is_required !== undefined
+                ? Boolean(question.is_required)
+                : true,
+            controls_visibility: Boolean(question.controls_visibility),
+          }))
+        : [],
+    }));
+  } else {
+    // Si pas de sections, initialiser avec une section vide
+    form.sections = [
+      {
+        title: "",
+        description: "",
+        order: 0,
+        depends_on_question_id: null,
+        depends_on_answer: null,
+        questions: [],
+      },
+    ];
+  }
 
   isEditing.value = true;
   showCreateModal.value = true;
@@ -411,6 +471,56 @@ const closePreview = () => {
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                 rows="2"
               />
+            </div>
+
+            <div class="mb-4">
+              <InputLabel
+                :for="'section-dependency-' + sectionIndex"
+                value="Dépend de la question (optionnel)"
+              />
+              <select
+                :id="'section-dependency-' + sectionIndex"
+                v-model="section.depends_on_question_id"
+                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+              >
+                <option :value="null">Aucune dépendance</option>
+                <!-- Parcourir toutes les questions des sections précédentes -->
+                <template
+                  v-for="(prevSection, prevIndex) in form.sections.slice(
+                    0,
+                    sectionIndex
+                  )"
+                  :key="prevIndex"
+                >
+                  <template
+                    v-for="question in prevSection.questions"
+                    :key="question.id"
+                  >
+                    <!-- Modifié la condition pour inclure les questions de type select et radio -->
+                    <option
+                      v-if="['select', 'radio'].includes(question.type)"
+                      :value="question.id"
+                    >
+                      {{ question.question }}
+                    </option>
+                  </template>
+                </template>
+              </select>
+
+              <!-- Afficher uniquement si une question dépendante est sélectionnée -->
+              <div v-if="section.depends_on_question_id" class="mt-2">
+                <InputLabel
+                  :for="'section-answer-' + sectionIndex"
+                  value="Valeur de réponse attendue"
+                />
+                <TextInput
+                  :id="'section-answer-' + sectionIndex"
+                  v-model="section.depends_on_answer"
+                  type="text"
+                  class="mt-1 block w-full"
+                  required
+                />
+              </div>
             </div>
 
             <!-- Questions de la section -->
