@@ -158,10 +158,19 @@ class EvaluationController extends Controller
     {
         return Inertia::render('Evaluations/Manage', [
             'modules' => Module::with('classes')->get(),
-            'sentTokens' => EvaluationToken::where('is_used', false)->get()
+            'sentTokens' => EvaluationToken::with(['module', 'class'])
+                ->where('is_used', false)
+                ->select([
+                    'module_id',
+                    'class_id',
+                    'created_at',
+                    'is_used',
+                    'expires_at',
+                    'id'
+                ])
+                ->get()
         ]);
     }
-
     /**
      * Affiche le formulaire d'évaluation pour un token donné
      */
@@ -228,6 +237,70 @@ class EvaluationController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Une erreur est survenue lors de l\'enregistrement de votre évaluation.');
+        }
+    }
+
+    public function generateTokensForGroup(Request $request)
+    {
+        try {
+            $request->validate([
+                'module_id' => 'required|exists:modules,id',
+                'class_group' => 'required|string'
+            ]);
+
+            DB::beginTransaction();
+
+            $module = Module::findOrFail($request->module_id);
+            $classGroup = $request->class_group;
+
+            // Récupérer l'ID de la classe à partir du nom
+            $class = DB::table('class_groups')->where('name', $classGroup)->first();
+
+            if (!$class) {
+                throw new \Exception('Classe non trouvée');
+            }
+
+            // Modifier cette partie pour utiliser class_id
+            $enrollments = CourseEnrollment::where('module_id', $module->id)
+                ->where('class_id', $class->id)
+                ->with('student')
+                ->get();
+
+            $tokensGenerated = 0;
+            $totalStudents = $enrollments->count();
+
+            foreach ($enrollments as $enrollment) {
+                // Invalider les anciens tokens non utilisés
+                EvaluationToken::where('student_email', $enrollment->student->email)
+                    ->where('module_id', $module->id)
+                    ->where('class_id', $class->id)
+                    ->where('is_used', false)
+                    ->update(['is_used' => true]);
+
+                // Créer un nouveau token
+                $token = EvaluationToken::create([
+                    'token' => Str::random(64),
+                    'module_id' => $module->id,
+                    'student_email' => $enrollment->student->email,
+                    'class_id' => $class->id,
+                    'expires_at' => now()->addDays(7),
+                    'is_used' => false
+                ]);
+
+                Mail::to($enrollment->student->email)
+                    ->send(new EvaluationInvitation($token));
+                $tokensGenerated++;
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', "Invitations envoyées avec succès ($tokensGenerated/$totalStudents)");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erreur lors de la génération des tokens:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Une erreur est survenue lors de l\'envoi des invitations.');
         }
     }
 }

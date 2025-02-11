@@ -12,7 +12,7 @@ class EvaluationToken extends Model
         'token',
         'module_id',
         'student_email',
-        'class_group',
+        'class_id',
         'is_used',
         'expires_at',
         'used_at'
@@ -22,6 +22,12 @@ class EvaluationToken extends Model
         'expires_at' => 'datetime',
         'is_used' => 'boolean'
     ];
+
+    // Ajoutez cette relation
+    public function class()
+    {
+        return $this->belongsTo(ClassGroup::class, 'class_id');
+    }
 
     public function module()
     {

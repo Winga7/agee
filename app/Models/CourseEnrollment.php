@@ -35,4 +35,9 @@ class CourseEnrollment extends Model
   {
     return $this->hasMany(EvaluationToken::class, 'student_email', 'student_email');
   }
+
+  public function class()
+  {
+    return $this->belongsTo(ClassGroup::class, 'class_id');
+  }
 }

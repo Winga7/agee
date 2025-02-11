@@ -91,6 +91,7 @@ const sendInvitations = () => {
     },
     onError: (errors) => {
       console.error("Erreurs:", errors);
+      alert("Une erreur est survenue lors de l'envoi des invitations.");
     },
   });
 };
@@ -149,7 +150,7 @@ const formatDate = (date) => {
                 v-model="selectedGroup"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
               >
-                <option value="">Sélectionner un groupe</option>
+                <option value="">Sélectionner une classe</option>
                 <option v-for="group in groups" :key="group" :value="group">
                   {{ group }}
                 </option>
@@ -182,7 +183,9 @@ const formatDate = (date) => {
               <tbody>
                 <tr v-for="token in sentTokens" :key="token.id">
                   <td class="px-6 py-4">{{ token.module.title }}</td>
-                  <td class="px-6 py-4">{{ token.class_group }}</td>
+                  <td class="px-6 py-4">
+                    {{ token.class ? token.class.name : "" }}
+                  </td>
                   <td class="px-6 py-4">{{ formatDate(token.created_at) }}</td>
                   <td class="px-6 py-4">
                     <span
