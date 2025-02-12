@@ -7,7 +7,9 @@ defineProps({
 </script>
 
 <template>
-  <Head :title="title" />
+  <Head :title="title">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  </Head>
 
   <div class="min-h-screen bg-gray-100">
     <main>
