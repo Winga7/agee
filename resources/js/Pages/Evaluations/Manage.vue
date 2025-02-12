@@ -13,12 +13,18 @@ const props = defineProps({
     required: true,
     default: () => [],
   },
+  forms: {
+    type: Array,
+    required: true,
+    default: () => [],
+  },
 });
 
 console.log("Props reçues:", props.sentTokens);
 
 const selectedModule = ref("");
 const selectedGroup = ref("");
+const selectedForm = ref("");
 const groups = ref([]);
 const students = ref([]);
 
@@ -78,6 +84,7 @@ const sendInvitations = () => {
   const form = useForm({
     module_id: selectedModule.value,
     class_group: selectedGroup.value,
+    form_id: selectedForm.value,
   });
 
   form.post("/evaluations/generate-tokens", {
@@ -86,6 +93,7 @@ const sendInvitations = () => {
       router.reload({ only: ["sentTokens"] });
       selectedModule.value = "";
       selectedGroup.value = "";
+      selectedForm.value = "";
       groups.value = [];
       students.value = [];
     },
@@ -157,8 +165,28 @@ const formatDate = (date) => {
               </select>
             </div>
 
+            <!-- Sélection du formulaire -->
+            <div v-if="selectedModule && selectedGroup" class="mb-6">
+              <label class="block font-medium text-sm text-gray-700">
+                Formulaire d'évaluation
+              </label>
+              <select
+                v-model="selectedForm"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                required
+              >
+                <option value="">Sélectionner un formulaire</option>
+                <option v-for="form in forms" :key="form.id" :value="form.id">
+                  {{ form.title }}
+                </option>
+              </select>
+            </div>
+
             <!-- Bouton d'envoi -->
-            <div v-if="selectedModule && selectedGroup" class="mt-6">
+            <div
+              v-if="selectedModule && selectedGroup && selectedForm"
+              class="mt-6"
+            >
               <button
                 type="submit"
                 class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
