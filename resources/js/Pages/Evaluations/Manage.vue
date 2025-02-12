@@ -115,6 +115,35 @@ const formatDate = (date) => {
     minute: "2-digit",
   });
 };
+
+// Ajout d'une computed property pour regrouper les tokens
+const groupedTokens = computed(() => {
+  const grouped = {};
+
+  props.sentTokens.forEach((token) => {
+    const key = `${token.module_id}_${token.class_id}`;
+
+    if (!grouped[key]) {
+      grouped[key] = {
+        module: token.module,
+        class: token.class,
+        created_at: token.created_at,
+        module_id: token.module_id,
+        class_id: token.class_id,
+        completed: token.completed || 0, // Utiliser completed au lieu de is_used
+        total_sent: token.total_sent || 0,
+        expired: token.is_expired || 0,
+      };
+    } else {
+      // Mettre à jour les compteurs
+      grouped[key].completed += token.completed || 0;
+      grouped[key].total_sent += token.total_sent || 0;
+      grouped[key].expired += token.is_expired || 0;
+    }
+  });
+
+  return Object.values(grouped);
+});
 </script>
 
 <template>
@@ -211,31 +240,39 @@ const formatDate = (date) => {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="token in sentTokens" :key="token.id">
-                  <td class="px-6 py-4">{{ token.module.title }}</td>
-                  <td class="px-6 py-4">{{ token.class.name }}</td>
-                  <td class="px-6 py-4">{{ formatDate(token.created_at) }}</td>
+                <tr
+                  v-for="group in groupedTokens"
+                  :key="`${group.module_id}_${group.class_id}`"
+                >
+                  <td class="px-6 py-4">{{ group.module.title }}</td>
+                  <td class="px-6 py-4">{{ group.class.name }}</td>
+                  <td class="px-6 py-4">{{ formatDate(group.created_at) }}</td>
                   <td class="px-6 py-4">
                     <span
                       :class="{
-                        'text-green-600': token.completed === token.total_sent,
+                        'text-green-600':
+                          group.completed === group.total_sent &&
+                          group.completed > 0,
                         'text-red-600':
-                          token.expired === token.total_sent - token.completed,
+                          group.expired > 0 &&
+                          group.completed < group.total_sent,
                         'text-yellow-600':
-                          token.completed < token.total_sent &&
-                          token.expired < token.total_sent - token.completed,
+                          group.completed < group.total_sent &&
+                          group.expired === 0,
                       }"
                     >
-                      {{ token.completed }}/{{ token.total_sent }}
+                      {{ group.completed }}/{{ group.total_sent }}
                     </span>
                   </td>
                   <td class="px-6 py-4">
                     <Link
-                      :href="`/evaluations/responses/${token.module_id}/${token.class_id}/${token.created_at}`"
+                      v-if="group.completed > 0"
+                      :href="`/evaluations/responses/${group.module_id}/${group.class_id}/${group.created_at}`"
                       class="text-blue-600 hover:text-blue-800"
                     >
                       Voir les réponses
                     </Link>
+                    <span v-else class="text-gray-400"> Aucune réponse </span>
                   </td>
                 </tr>
               </tbody>

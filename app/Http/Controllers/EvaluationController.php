@@ -160,19 +160,30 @@ class EvaluationController extends Controller
   {
     return Inertia::render('Evaluations/Manage', [
       'modules' => Module::with('classes')->get(),
-      'sentTokens' => EvaluationToken::with(['module', 'class', 'evaluations'])
+      'sentTokens' => EvaluationToken::with(['module', 'class'])
         ->select([
           'module_id',
           'class_id',
-          'form_id',
           'created_at',
           DB::raw('COUNT(*) as total_sent'),
           DB::raw('SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) as completed'),
-          DB::raw('SUM(CASE WHEN is_used = 0 AND expires_at < NOW() THEN 1 ELSE 0 END) as expired')
+          DB::raw('SUM(CASE WHEN expires_at < NOW() THEN 1 ELSE 0 END) as is_expired')
         ])
-        ->groupBy('module_id', 'class_id', 'form_id', 'created_at')
+        ->groupBy('module_id', 'class_id', 'created_at')
         ->orderBy('created_at', 'desc')
-        ->get(),
+        ->get()
+        ->map(function ($token) {
+          return [
+            'module' => $token->module,
+            'class' => $token->class,
+            'module_id' => $token->module_id,
+            'class_id' => $token->class_id,
+            'created_at' => $token->created_at,
+            'total_sent' => $token->total_sent,
+            'completed' => (int)$token->completed,
+            'is_expired' => (int)$token->is_expired
+          ];
+        }),
       'forms' => Form::where('is_active', true)->get()
     ]);
   }
