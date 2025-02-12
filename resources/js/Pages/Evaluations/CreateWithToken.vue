@@ -148,7 +148,16 @@ const previousSection = () => {
 
 const submit = () => {
   form.answers = answers.value;
-  form.post(route("evaluations.store-with-token", props.token));
+  form.post(route("evaluations.store-with-token", props.token), {
+    onSuccess: () => {
+      // Redirection gérée par le contrôleur
+      console.log("Formulaire soumis avec succès");
+    },
+    onError: (errors) => {
+      console.error("Erreurs lors de la soumission:", errors);
+    },
+    preserveScroll: true,
+  });
 };
 
 const initializeAnswers = () => {

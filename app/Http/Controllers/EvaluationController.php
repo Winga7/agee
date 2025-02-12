@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Models\Form;
+use App\Models\ClassGroup;
 
 class EvaluationController extends Controller
 {
@@ -159,16 +160,18 @@ class EvaluationController extends Controller
   {
     return Inertia::render('Evaluations/Manage', [
       'modules' => Module::with('classes')->get(),
-      'sentTokens' => EvaluationToken::with(['module', 'class'])
-        ->where('is_used', false)
+      'sentTokens' => EvaluationToken::with(['module', 'class', 'evaluations'])
         ->select([
           'module_id',
           'class_id',
+          'form_id',
           'created_at',
-          'is_used',
-          'expires_at',
-          'id'
+          DB::raw('COUNT(*) as total_sent'),
+          DB::raw('SUM(CASE WHEN is_used = 1 THEN 1 ELSE 0 END) as completed'),
+          DB::raw('SUM(CASE WHEN is_used = 0 AND expires_at < NOW() THEN 1 ELSE 0 END) as expired')
         ])
+        ->groupBy('module_id', 'class_id', 'form_id', 'created_at')
+        ->orderBy('created_at', 'desc')
         ->get(),
       'forms' => Form::where('is_active', true)->get()
     ]);
@@ -202,41 +205,65 @@ class EvaluationController extends Controller
    */
   public function storeWithToken(Request $request, $token)
   {
+    Log::info('Début storeWithToken', [
+      'token' => $token,
+      'request_data' => $request->all()
+    ]);
+
     $evaluationToken = EvaluationToken::where('token', $token)
       ->with(['form', 'module'])
       ->firstOrFail();
 
+    Log::info('Token trouvé', [
+      'token_data' => $evaluationToken->toArray()
+    ]);
+
     if (!$evaluationToken->isValid()) {
+      Log::warning('Token invalide', [
+        'is_used' => $evaluationToken->is_used,
+        'expires_at' => $evaluationToken->expires_at
+      ]);
+
       if ($evaluationToken->isExpired()) {
         return back()->with('error', 'Ce lien d\'évaluation a expiré.');
       }
       return back()->with('error', 'Ce lien d\'évaluation a déjà été utilisé.');
     }
 
-    // Validation des réponses en fonction du formulaire
     $validated = $request->validate([
       'answers' => 'required|array',
     ]);
 
     DB::beginTransaction();
     try {
-      // Créer l'évaluation avec les réponses
       $evaluation = Evaluation::create([
         'module_id' => $evaluationToken->module_id,
         'form_id' => $evaluationToken->form_id,
         'answers' => $validated['answers'],
-        'user_hash' => hash('sha256', $token . env('APP_KEY'))
+        'user_hash' => hash('sha256', $token . $evaluationToken->student_email . env('APP_KEY')),
+        'status' => 'completed',
+        'score' => 0
       ]);
 
-      // Marquer le token comme utilisé
-      $evaluationToken->update(['is_used' => true]);
+      $evaluationToken->update([
+        'is_used' => true,
+        'used_at' => now()
+      ]);
 
       DB::commit();
-      return redirect()->route('evaluations.thank-you')
-        ->with('success', 'Merci pour votre évaluation !');
+
+      Log::info('Évaluation créée avec succès', [
+        'evaluation_id' => $evaluation->id
+      ]);
+
+      return Inertia::render('Evaluations/ThankYou');
     } catch (\Exception $e) {
       DB::rollBack();
-      return back()->with('error', 'Une erreur est survenue lors de l\'enregistrement de votre évaluation.');
+      Log::error('Erreur lors de l\'enregistrement:', [
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+      ]);
+      return back()->with('error', 'Une erreur est survenue lors de l\'enregistrement.');
     }
   }
 
@@ -304,5 +331,39 @@ class EvaluationController extends Controller
       ]);
       return redirect()->back()->with('error', 'Une erreur est survenue lors de l\'envoi des invitations.');
     }
+  }
+
+  public function showResponses($moduleId, $classId, $date)
+  {
+    $module = Module::findOrFail($moduleId);
+    $class = ClassGroup::findOrFail($classId);
+
+    $tokens = EvaluationToken::where('module_id', $moduleId)
+      ->where('class_id', $classId)
+      ->whereDate('created_at', $date)
+      ->with(['evaluations'])
+      ->get()
+      ->map(function ($token) {
+        return [
+          'student_email' => $token->student_email,
+          'is_used' => $token->is_used,
+          'used_at' => $token->used_at,
+          'isExpired' => $token->isExpired(),
+          'answers' => $token->evaluations->first()?->answers ?? null
+        ];
+      });
+
+    return Inertia::render('Evaluations/Responses', [
+      'tokens' => $tokens,
+      'module' => [
+        'id' => $module->id,
+        'title' => $module->title
+      ],
+      'classGroup' => [
+        'id' => $class->id,
+        'name' => $class->name
+      ],
+      'date' => $date
+    ]);
   }
 }

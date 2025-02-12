@@ -7,51 +7,56 @@ use Illuminate\Database\Eloquent\Model;
 
 class Evaluation extends Model
 {
-    use HasFactory;
+  use HasFactory;
 
-    protected $fillable = [
-        'user_hash',
-        'module_id',
-        'score',
-        'original_comment',
-        'anonymized_comment',
-        'is_anonymized',
-        'status'
-    ];
+  protected $fillable = [
+    'user_hash',
+    'module_id',
+    'form_id',
+    'answers',
+    'status',
+    'score'
+  ];
 
-    protected $casts = [
-        'is_anonymized' => 'boolean',
-    ];
+  protected $casts = [
+    'answers' => 'array',
+    'is_anonymized' => 'boolean',
+  ];
 
-    protected static function boot()
-    {
-        parent::boot();
+  protected static function boot()
+  {
+    parent::boot();
 
-        static::creating(function ($evaluation) {
-            if (auth()->check()) {
-                // Création d'un hash unique pour l'utilisateur et le module
-                $evaluation->user_hash = hash('sha256', auth()->id() . env('APP_KEY'));
-            }
-        });
-    }
+    static::creating(function ($evaluation) {
+      if (auth()->check()) {
+        // Création d'un hash unique pour l'utilisateur et le module
+        $evaluation->user_hash = hash('sha256', auth()->id() . env('APP_KEY'));
+      }
+    });
+  }
 
-    // Relation avec le module
-    public function module()
-    {
-        return $this->belongsTo(Module::class);
-    }
+  // Relation avec le module
+  public function module()
+  {
+    return $this->belongsTo(Module::class);
+  }
 
-    // Ne jamais exposer le commentaire original
-    protected $hidden = ['original_comment', 'user_hash'];
+  // Ne jamais exposer le commentaire original
+  protected $hidden = ['original_comment', 'user_hash'];
 
-    public function markAsCompleted()
-    {
-        $this->status = 'completed';
-        $this->save();
-    }
+  public function markAsCompleted()
+  {
+    $this->status = 'completed';
+    $this->save();
+  }
 
-    public function isCompleted()
-    {
-        return $this->status === 'completed';
-    }
+  public function isCompleted()
+  {
+    return $this->status === 'completed';
+  }
+
+  public function evaluationToken()
+  {
+    return $this->belongsTo(EvaluationToken::class, 'user_hash', 'token');
+  }
 }

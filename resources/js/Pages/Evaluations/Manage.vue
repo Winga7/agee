@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { useForm, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
+import { Link } from "@inertiajs/vue3";
 
 const props = defineProps({
   modules: {
@@ -205,36 +206,36 @@ const formatDate = (date) => {
                   <th class="px-6 py-3 bg-gray-50 text-left">Module</th>
                   <th class="px-6 py-3 bg-gray-50 text-left">Classe</th>
                   <th class="px-6 py-3 bg-gray-50 text-left">Date d'envoi</th>
-                  <th class="px-6 py-3 bg-gray-50 text-left">Statut</th>
+                  <th class="px-6 py-3 bg-gray-50 text-left">Réponses</th>
+                  <th class="px-6 py-3 bg-gray-50 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="token in sentTokens" :key="token.id">
                   <td class="px-6 py-4">{{ token.module.title }}</td>
-                  <td class="px-6 py-4">
-                    {{ token.class ? token.class.name : "" }}
-                  </td>
+                  <td class="px-6 py-4">{{ token.class.name }}</td>
                   <td class="px-6 py-4">{{ formatDate(token.created_at) }}</td>
                   <td class="px-6 py-4">
                     <span
                       :class="{
-                        'text-green-600':
-                          token.completed + token.expired === token.total_sent,
-                        'text-yellow-600': token.pending > 0,
+                        'text-green-600': token.completed === token.total_sent,
                         'text-red-600':
-                          token.completed === 0 &&
-                          token.expired === token.total_sent,
+                          token.expired === token.total_sent - token.completed,
+                        'text-yellow-600':
+                          token.completed < token.total_sent &&
+                          token.expired < token.total_sent - token.completed,
                       }"
                     >
-                      {{
-                        token.completed + token.expired === token.total_sent
-                          ? "Terminé"
-                          : "En cours"
-                      }}
-                      <span class="text-gray-500 text-sm">
-                        ({{ token.completed }}/{{ token.total_sent }} réponses)
-                      </span>
+                      {{ token.completed }}/{{ token.total_sent }}
                     </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <Link
+                      :href="`/evaluations/responses/${token.module_id}/${token.class_id}/${token.created_at}`"
+                      class="text-blue-600 hover:text-blue-800"
+                    >
+                      Voir les réponses
+                    </Link>
                   </td>
                 </tr>
               </tbody>

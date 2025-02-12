@@ -22,6 +22,7 @@ class EvaluationToken extends Model
 
   protected $casts = [
     'expires_at' => 'datetime',
+    'used_at' => 'datetime',
     'is_used' => 'boolean'
   ];
 
@@ -38,6 +39,11 @@ class EvaluationToken extends Model
   public function form(): BelongsTo
   {
     return $this->belongsTo(Form::class);
+  }
+
+  public function evaluations()
+  {
+    return $this->hasMany(Evaluation::class, 'user_hash', 'token');
   }
 
   public static function generateToken()
