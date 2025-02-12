@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 
 const props = defineProps({
@@ -21,6 +21,9 @@ const props = defineProps({
   },
 });
 
+// Ajout de logs pour vérifier les données
+console.log("Tokens reçus:", props.tokens);
+
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -30,6 +33,26 @@ const formatDate = (date) => {
     minute: "2-digit",
   });
 };
+
+// Statistiques plus détaillées
+const totalResponses = computed(() => {
+  console.log("Total tokens:", props.tokens.length);
+  return props.tokens.length;
+});
+
+const completedResponses = computed(() => {
+  const completed = props.tokens.filter(
+    (token) => token.used_at !== null
+  ).length;
+  console.log("Réponses complétées:", completed);
+  return completed;
+});
+
+const pendingResponses = computed(() => {
+  const pending = props.tokens.filter((token) => token.used_at === null).length;
+  console.log("Réponses en attente:", pending);
+  return pending;
+});
 </script>
 
 <template>
@@ -52,18 +75,18 @@ const formatDate = (date) => {
           <div class="grid grid-cols-3 gap-4 mb-6">
             <div class="bg-gray-50 p-4 rounded">
               <div class="text-lg font-semibold">Total envoyé</div>
-              <div class="text-2xl">{{ tokens.length }}</div>
+              <div class="text-2xl">{{ totalResponses }}</div>
             </div>
             <div class="bg-gray-50 p-4 rounded">
               <div class="text-lg font-semibold">Réponses reçues</div>
               <div class="text-2xl text-green-600">
-                {{ tokens.filter((t) => t.is_used).length }}
+                {{ completedResponses }}
               </div>
             </div>
             <div class="bg-gray-50 p-4 rounded">
               <div class="text-lg font-semibold">En attente/Expirés</div>
               <div class="text-2xl text-red-600">
-                {{ tokens.filter((t) => !t.is_used).length }}
+                {{ pendingResponses }}
               </div>
             </div>
           </div>
@@ -104,15 +127,15 @@ const formatDate = (date) => {
                     <span
                       :class="{
                         'px-2 py-1 rounded text-sm font-semibold': true,
-                        'bg-green-100 text-green-800': token.is_used,
+                        'bg-green-100 text-green-800': token.used_at != null,
                         'bg-yellow-100 text-yellow-800':
-                          !token.is_used && !token.isExpired,
+                          token.used_at == null && !token.isExpired,
                         'bg-red-100 text-red-800':
-                          !token.is_used && token.isExpired,
+                          token.used_at == null && token.isExpired,
                       }"
                     >
                       {{
-                        token.is_used
+                        token.used_at
                           ? "Complété"
                           : token.isExpired
                           ? "Expiré"

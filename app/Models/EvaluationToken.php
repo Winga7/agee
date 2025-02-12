@@ -51,9 +51,9 @@ class EvaluationToken extends Model
     return Str::random(64);
   }
 
-  public function isExpired(): bool
+  public function isExpired()
   {
-    return Carbon::parse($this->expires_at)->isPast();
+    return $this->expires_at && $this->expires_at->isPast();
   }
 
   public function isValid(): bool

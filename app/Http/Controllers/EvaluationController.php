@@ -346,35 +346,52 @@ class EvaluationController extends Controller
 
   public function showResponses($moduleId, $classId, $date)
   {
-    $module = Module::findOrFail($moduleId);
-    $class = ClassGroup::findOrFail($classId);
+    try {
+      // Debug des paramètres reçus
+      Log::info('Paramètres reçus:', [
+        'moduleId' => $moduleId,
+        'classId' => $classId,
+        'date' => $date
+      ]);
 
-    $tokens = EvaluationToken::where('module_id', $moduleId)
-      ->where('class_id', $classId)
-      ->whereDate('created_at', $date)
-      ->with(['evaluations'])
-      ->get()
-      ->map(function ($token) {
-        return [
-          'student_email' => $token->student_email,
-          'is_used' => $token->is_used,
-          'used_at' => $token->used_at,
-          'isExpired' => $token->isExpired(),
-          'answers' => $token->evaluations->first()?->answers ?? null
-        ];
-      });
+      // Convertir la date au format correct pour la comparaison
+      $searchDate = \Carbon\Carbon::parse($date)->format('Y-m-d');
 
-    return Inertia::render('Evaluations/Responses', [
-      'tokens' => $tokens,
-      'module' => [
-        'id' => $module->id,
-        'title' => $module->title
-      ],
-      'classGroup' => [
-        'id' => $class->id,
-        'name' => $class->name
-      ],
-      'date' => $date
-    ]);
+      $tokens = EvaluationToken::where('module_id', $moduleId)
+        ->where('class_id', $classId)
+        ->whereDate('created_at', $searchDate)
+        ->with(['evaluations' => function ($query) {
+          $query->select('id', 'user_hash', 'answers');
+        }])
+        ->get()
+        ->map(function ($token) {
+          return [
+            'student_email' => $token->student_email,
+            'used_at' => $token->used_at,
+            'isExpired' => $token->isExpired(),
+            'answers' => $token->evaluations->first()?->answers ?? null
+          ];
+        });
+
+      // Debug des tokens trouvés
+      Log::info('Tokens trouvés:', [
+        'count' => $tokens->count(),
+        'tokens' => $tokens->toArray()
+      ]);
+
+      return Inertia::render('Evaluations/Responses', [
+        'tokens' => $tokens,
+        'module' => Module::findOrFail($moduleId),
+        'classGroup' => ClassGroup::findOrFail($classId),
+        'date' => $date
+      ]);
+    } catch (\Exception $e) {
+      Log::error('Erreur dans showResponses:', [
+        'message' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+      ]);
+
+      return redirect()->back()->with('error', 'Erreur lors de la récupération des réponses.');
+    }
   }
 }
