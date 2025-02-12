@@ -46,15 +46,103 @@ const canProceed = computed(() => {
   );
 });
 
+// Ajouter cette computed property pour vérifier si une section doit être affichée
+const shouldShowSection = computed(() => {
+  if (!currentSectionData.value) return false;
+  if (!currentSectionData.value.depends_on_question_id) return true;
+
+  // Rechercher la question contrôlant la visibilité
+  let controllingQuestion = null;
+  for (const section of props.form.sections) {
+    for (const question of section.questions) {
+      if (question.id === currentSectionData.value.depends_on_question_id) {
+        controllingQuestion = question;
+        break;
+      }
+    }
+    if (controllingQuestion) break;
+  }
+
+  if (!controllingQuestion) return true;
+
+  // Vérifier si la réponse correspond
+  return (
+    answers.value[controllingQuestion.id] ===
+    currentSectionData.value.depends_on_answer
+  );
+});
+
+// Modifier la fonction nextSection
 const nextSection = () => {
-  if (currentSection.value < props.form.sections.length - 1) {
-    currentSection.value++;
+  if (
+    !canProceed.value ||
+    currentSection.value >= props.form.sections.length - 1
+  )
+    return;
+
+  // Trouver la prochaine section visible
+  let nextIndex = currentSection.value + 1;
+  while (nextIndex < props.form.sections.length) {
+    const section = props.form.sections[nextIndex];
+
+    // Si la section n'a pas de dépendance, elle est visible
+    if (!section.depends_on_question_id) {
+      currentSection.value = nextIndex;
+      break;
+    }
+
+    // Vérifier la condition de visibilité
+    let isVisible = false;
+    props.form.sections.forEach((s) => {
+      s.questions.forEach((q) => {
+        if (q.id === section.depends_on_question_id) {
+          isVisible = answers.value[q.id] === section.depends_on_answer;
+        }
+      });
+    });
+
+    if (isVisible) {
+      currentSection.value = nextIndex;
+      break;
+    }
+
+    // Si la section n'est pas visible, passer à la suivante
+    nextIndex++;
   }
 };
 
+// Modifier la fonction previousSection
 const previousSection = () => {
-  if (currentSection.value > 0) {
-    currentSection.value--;
+  if (currentSection.value <= 0) return;
+
+  // Trouver la section précédente visible
+  let prevIndex = currentSection.value - 1;
+  while (prevIndex >= 0) {
+    const section = props.form.sections[prevIndex];
+
+    // Si la section n'a pas de dépendance, elle est visible
+    if (!section.depends_on_question_id) {
+      currentSection.value = prevIndex;
+      break;
+    }
+
+    // Vérifier la condition de visibilité
+    let isVisible = false;
+    props.form.sections.forEach((s) => {
+      s.questions.forEach((q) => {
+        if (q.id === section.depends_on_question_id) {
+          isVisible = answers.value[q.id] === section.depends_on_answer;
+        }
+      });
+    });
+
+    if (isVisible) {
+      currentSection.value = prevIndex;
+      break;
+    }
+
+    // Si la section n'est pas visible, passer à la précédente
+    prevIndex--;
   }
 };
 
@@ -87,11 +175,23 @@ onMounted(() => {
   <PublicLayout :title="`Évaluation - ${module.title}`">
     <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
       <div class="bg-white p-6 shadow-sm rounded-lg">
+        <!-- Ajout de la bannière avec le logo -->
+        <div class="mb-6 rounded-lg overflow-hidden">
+          <img
+            src="/images/logo.svg"
+            :alt="module.title"
+            class="w-full h-48 object-contain"
+          />
+        </div>
+
         <h1 class="text-2xl font-bold text-gray-900 mb-6">
           Évaluation du cours : {{ module.title }}
         </h1>
 
-        <div v-if="props.form && props.form.sections" class="mb-6">
+        <div
+          v-if="props.form && props.form.sections && shouldShowSection"
+          class="mb-6"
+        >
           <h2 class="text-xl font-semibold mb-4">
             {{ currentSectionData?.title }}
           </h2>
