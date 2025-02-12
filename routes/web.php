@@ -76,7 +76,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 // Routes publiques pour les évaluations par token
 Route::get('/evaluate/{token}', [EvaluationController::class, 'createWithToken'])
   ->name('evaluations.create-with-token');
-Route::post('/evaluate/{token}', [EvaluationController::class, 'store'])
+Route::post('/evaluate/{token}', [EvaluationController::class, 'storeWithToken'])
   ->name('evaluations.store-with-token');
 
 Route::post('/enrollments', [CourseEnrollmentController::class, 'store'])->name('enrollments.store');
