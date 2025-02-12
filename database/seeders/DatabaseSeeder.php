@@ -84,12 +84,44 @@ class DatabaseSeeder extends Seeder
       ]);
     }
 
-    // Création de 20 modules
+    // Création de modules avec des noms cohérents
+    $modulesList = [
+      // Web Dev
+      ['title' => 'HTML/CSS Fondamentaux', 'code' => 'WEB101'],
+      ['title' => 'JavaScript Avancé', 'code' => 'WEB202'],
+      ['title' => 'PHP & MySQL', 'code' => 'WEB303'],
+      ['title' => 'Framework Laravel', 'code' => 'WEB404'],
+
+      // Design
+      ['title' => 'Design UI/UX', 'code' => 'DES101'],
+      ['title' => 'Adobe Photoshop', 'code' => 'DES202'],
+      ['title' => 'Adobe Illustrator', 'code' => 'DES303'],
+      ['title' => 'Motion Design', 'code' => 'DES404'],
+
+      // Marketing
+      ['title' => 'Marketing Digital', 'code' => 'MKT101'],
+      ['title' => 'Réseaux Sociaux', 'code' => 'MKT202'],
+      ['title' => 'SEO/SEA', 'code' => 'MKT303'],
+      ['title' => 'Analyse de Données', 'code' => 'MKT404'],
+
+      // Comptabilité
+      ['title' => 'Comptabilité Générale', 'code' => 'CPT101'],
+      ['title' => 'Fiscalité', 'code' => 'CPT202'],
+      ['title' => 'Gestion Financière', 'code' => 'CPT303'],
+      ['title' => 'Audit Comptable', 'code' => 'CPT404'],
+
+      // Informatique
+      ['title' => 'Systèmes d\'exploitation', 'code' => 'INF101'],
+      ['title' => 'Réseaux', 'code' => 'INF202'],
+      ['title' => 'Sécurité Informatique', 'code' => 'INF303'],
+      ['title' => 'Base de données', 'code' => 'INF404']
+    ];
+
     $modules = [];
-    for ($i = 0; $i < 20; $i++) {
+    foreach ($modulesList as $moduleInfo) {
       $modules[] = Module::create([
-        'title' => $faker->sentence(3),
-        'code' => strtoupper($faker->lexify('???')) . $faker->numberBetween(100, 999),
+        'title' => $moduleInfo['title'],
+        'code' => $moduleInfo['code'],
         'description' => $faker->paragraph,
         'professor_id' => $faker->randomElement($professors)->id
       ]);
