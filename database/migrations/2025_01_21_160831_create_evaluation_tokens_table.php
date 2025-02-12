@@ -17,6 +17,7 @@ return new class extends Migration
       $table->foreignId('module_id')->constrained();
       $table->string('student_email');
       $table->foreignId('class_id')->constrained('class_groups')->onDelete('cascade');
+      $table->foreignId('form_id')->constrained('forms')->onDelete('cascade');
       $table->dateTime('expires_at');
       $table->boolean('is_used')->default(false);
       $table->timestamp('used_at')->nullable();

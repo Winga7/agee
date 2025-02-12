@@ -178,7 +178,9 @@ class EvaluationController extends Controller
    */
   public function createWithToken($token)
   {
-    $evaluationToken = EvaluationToken::where('token', $token)->firstOrFail();
+    $evaluationToken = EvaluationToken::where('token', $token)
+      ->with(['module', 'form.sections.questions'])
+      ->firstOrFail();
 
     if (!$evaluationToken->isValid()) {
       if ($evaluationToken->isExpired()) {
@@ -190,6 +192,7 @@ class EvaluationController extends Controller
     return Inertia::render('Evaluations/CreateWithToken', [
       'token' => $token,
       'module' => $evaluationToken->module,
+      'form' => $evaluationToken->form,
       'expires_at' => $evaluationToken->expires_at
     ]);
   }
@@ -199,7 +202,9 @@ class EvaluationController extends Controller
    */
   public function storeWithToken(Request $request, $token)
   {
-    $evaluationToken = EvaluationToken::where('token', $token)->firstOrFail();
+    $evaluationToken = EvaluationToken::where('token', $token)
+      ->with(['form', 'module'])
+      ->firstOrFail();
 
     if (!$evaluationToken->isValid()) {
       if ($evaluationToken->isExpired()) {
@@ -208,25 +213,18 @@ class EvaluationController extends Controller
       return back()->with('error', 'Ce lien d\'évaluation a déjà été utilisé.');
     }
 
+    // Validation des réponses en fonction du formulaire
     $validated = $request->validate([
-      'score' => 'required|integer|between:1,5',
-      'comment' => 'nullable|string|max:1000',
+      'answers' => 'required|array',
     ]);
-
-    // Anonymisation du commentaire si présent
-    if (!empty($validated['comment'])) {
-      $anonymizedComment = $this->aiService->anonymizeComment($validated['comment']);
-    }
 
     DB::beginTransaction();
     try {
-      // Créer l'évaluation
-      Evaluation::create([
+      // Créer l'évaluation avec les réponses
+      $evaluation = Evaluation::create([
         'module_id' => $evaluationToken->module_id,
-        'score' => $validated['score'],
-        'original_comment' => $validated['comment'] ?? null,
-        'anonymized_comment' => $anonymizedComment ?? null,
-        'is_anonymized' => !empty($anonymizedComment),
+        'form_id' => $evaluationToken->form_id,
+        'answers' => $validated['answers'],
         'user_hash' => hash('sha256', $token . env('APP_KEY'))
       ]);
 
