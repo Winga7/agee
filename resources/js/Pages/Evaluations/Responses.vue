@@ -53,6 +53,15 @@ const pendingResponses = computed(() => {
   console.log("Réponses en attente:", pending);
   return pending;
 });
+
+// Ajout de logs plus détaillés
+const tokensWithAnswers = computed(() => {
+  console.log(
+    "Tokens avec réponses:",
+    props.tokens.filter((t) => t.answers)
+  );
+  return props.tokens.filter((t) => t.answers);
+});
 </script>
 
 <template>
@@ -148,6 +157,15 @@ const pendingResponses = computed(() => {
                   </td>
                   <td class="px-6 py-4">
                     <div v-if="token.answers" class="space-y-2">
+                      <!-- Ajout d'un log pour déboguer -->
+                      {{
+                        console.log(
+                          "Réponses pour",
+                          token.student_email,
+                          ":",
+                          token.answers
+                        )
+                      }}
                       <div
                         v-for="(answer, question) in token.answers"
                         :key="question"

@@ -347,37 +347,29 @@ class EvaluationController extends Controller
   public function showResponses($moduleId, $classId, $date)
   {
     try {
-      // Debug des paramètres reçus
-      Log::info('Paramètres reçus:', [
-        'moduleId' => $moduleId,
-        'classId' => $classId,
-        'date' => $date
-      ]);
-
-      // Convertir la date au format correct pour la comparaison
       $searchDate = \Carbon\Carbon::parse($date)->format('Y-m-d');
 
+      // Modifié pour joindre correctement les évaluations via user_hash
       $tokens = EvaluationToken::where('module_id', $moduleId)
         ->where('class_id', $classId)
         ->whereDate('created_at', $searchDate)
-        ->with(['evaluations' => function ($query) {
-          $query->select('id', 'user_hash', 'answers');
-        }])
         ->get()
         ->map(function ($token) {
+          // Créer le hash pour la correspondance
+          $userHash = hash('sha256', $token->token . $token->student_email . env('APP_KEY'));
+
+          // Chercher l'évaluation correspondante
+          $evaluation = Evaluation::where('user_hash', $userHash)
+            ->where('module_id', $token->module_id)
+            ->first();
+
           return [
             'student_email' => $token->student_email,
             'used_at' => $token->used_at,
             'isExpired' => $token->isExpired(),
-            'answers' => $token->evaluations->first()?->answers ?? null
+            'answers' => $evaluation ? $evaluation->answers : null
           ];
         });
-
-      // Debug des tokens trouvés
-      Log::info('Tokens trouvés:', [
-        'count' => $tokens->count(),
-        'tokens' => $tokens->toArray()
-      ]);
 
       return Inertia::render('Evaluations/Responses', [
         'tokens' => $tokens,
