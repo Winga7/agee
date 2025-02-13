@@ -11,6 +11,10 @@ use App\Http\Controllers\CourseEnrollmentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Laravel\Fortify\Fortify;
+
+// Désactiver l'enregistrement
+Fortify::registerView(null);
 
 Route::get('/', function () {
   return Inertia::render('Welcome', [
