@@ -409,6 +409,17 @@ class EvaluationController extends Controller
       $directory = storage_path('app/public/exports');
       $filePath = $directory . '/' . $fileName;
 
+      // Récupérer les informations du module et de la classe pour le titre de l'onglet
+      $module = Module::findOrFail($moduleId);
+      $class = ClassGroup::findOrFail($classId);
+
+      // Le titre de l'onglet sera basé sur le module et la classe
+      $sheetTitle = sprintf(
+        '%s_%s',
+        $module->code ?? $moduleId,
+        $class->name ?? $classId
+      );
+
       // Créer le répertoire s'il n'existe pas
       if (!file_exists($directory)) {
         mkdir($directory, 0755, true);
@@ -417,48 +428,66 @@ class EvaluationController extends Controller
       // Charger le fichier existant ou en créer un nouveau
       if (file_exists($filePath)) {
         $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
-        // Créer une nouvelle feuille pour cette évaluation
-        $spreadsheet->createSheet();
-        $spreadsheet->setActiveSheetIndex($spreadsheet->getSheetCount() - 1);
+
+        // Chercher si l'onglet pour ce module existe déjà
+        $sheet = null;
+        foreach ($spreadsheet->getAllSheets() as $worksheet) {
+          if ($worksheet->getTitle() === $sheetTitle) {
+            $sheet = $worksheet;
+            break;
+          }
+        }
+
+        // Si l'onglet n'existe pas, le créer
+        if (!$sheet) {
+          $spreadsheet->createSheet();
+          $sheet = $spreadsheet->setActiveSheetIndex($spreadsheet->getSheetCount() - 1);
+          $sheet->setTitle($sheetTitle);
+
+          // Écrire les en-têtes pour le nouvel onglet
+          $headers = ['Horodatage'];
+          foreach ($questionMap as $questionId => $question) {
+            $headers[] = $question;
+          }
+          $sheet->fromArray([$headers], null, 'A1');
+        }
       } else {
         $spreadsheet = new Spreadsheet();
-      }
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle($sheetTitle);
 
-      $sheet = $spreadsheet->getActiveSheet();
-      $sheet->setTitle(sprintf(
-        '%s_%s_%s',
-        $moduleId,
-        $classId,
-        \Carbon\Carbon::parse($date)->format('Y-m-d')
-      ));
-
-      // En-tête avec horodatage et questions
-      $headers = ['Horodatage'];
-      $firstResponse = $tokens->first(function ($token) {
-        return !empty($token['answers']);
-      });
-
-      if ($firstResponse && !empty($firstResponse['answers'])) {
-        foreach ($firstResponse['answers'] as $questionId => $answer) {
-          // Utiliser l'énoncé de la question au lieu de "Question X"
-          $headers[] = $questionMap[$questionId] ?? "Question $questionId";
+        // Écrire les en-têtes pour le nouveau fichier
+        $headers = ['Horodatage'];
+        foreach ($questionMap as $questionId => $question) {
+          $headers[] = $question;
         }
+        $sheet->fromArray([$headers], null, 'A1');
       }
 
-      // Écrire les en-têtes
-      $sheet->fromArray([$headers], null, 'A1');
+      // Trouver la dernière ligne utilisée dans l'onglet
+      $lastRow = $sheet->getHighestRow();
 
-      // Ajouter les réponses
-      $row = 2;
+      // Ajouter les nouvelles réponses à la suite
       foreach ($tokens as $token) {
         if (empty($token['answers'])) continue;
 
-        $rowData = [$token['used_at']]; // Horodatage
-        foreach ($token['answers'] as $answer) {
+        $rowData = [
+          $token['used_at']
+        ];
+
+        // Ajouter les réponses dans l'ordre des questions du mapping
+        foreach ($questionMap as $questionId => $question) {
+          $answer = $token['answers'][$questionId] ?? '';
           $rowData[] = is_array($answer) ? implode(', ', $answer) : $answer;
         }
-        $sheet->fromArray([$rowData], null, 'A' . $row);
-        $row++;
+
+        $lastRow++;
+        $sheet->fromArray([$rowData], null, 'A' . $lastRow);
+      }
+
+      // Ajuster la largeur des colonnes
+      foreach (range('A', $sheet->getHighestColumn()) as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
       }
 
       $writer = new Xlsx($spreadsheet);
