@@ -391,8 +391,32 @@ class EvaluationController extends Controller
   private function exportToExcel($tokens, $moduleId, $classId, $date)
   {
     try {
-      $spreadsheet = new Spreadsheet();
+      $fileName = 'evaluations.xlsx';
+      $directory = storage_path('app/public/exports');
+      $filePath = $directory . '/' . $fileName;
+
+      // Créer le répertoire s'il n'existe pas
+      if (!file_exists($directory)) {
+        mkdir($directory, 0755, true);
+      }
+
+      // Charger le fichier existant ou en créer un nouveau
+      if (file_exists($filePath)) {
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+        // Créer une nouvelle feuille pour cette évaluation
+        $spreadsheet->createSheet();
+        $spreadsheet->setActiveSheetIndex($spreadsheet->getSheetCount() - 1);
+      } else {
+        $spreadsheet = new Spreadsheet();
+      }
+
       $sheet = $spreadsheet->getActiveSheet();
+      $sheet->setTitle(sprintf(
+        '%s_%s_%s',
+        $moduleId,
+        $classId,
+        \Carbon\Carbon::parse($date)->format('Y-m-d')
+      ));
 
       // En-tête avec horodatage et questions
       $headers = ['Horodatage'];
@@ -421,22 +445,6 @@ class EvaluationController extends Controller
         $sheet->fromArray([$rowData], null, 'A' . $row);
         $row++;
       }
-
-      // Générer le nom du fichier
-      $fileName = sprintf(
-        'evaluations_%s_%s_%s.xlsx',
-        $moduleId,
-        $classId,
-        \Carbon\Carbon::parse($date)->format('Y-m-d')
-      );
-
-      // Créer le répertoire s'il n'existe pas
-      $directory = storage_path('app/public/exports');
-      if (!file_exists($directory)) {
-        mkdir($directory, 0755, true);
-      }
-
-      $filePath = $directory . '/' . $fileName;
 
       $writer = new Xlsx($spreadsheet);
       $writer->save($filePath);
