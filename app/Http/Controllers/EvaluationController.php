@@ -401,8 +401,6 @@ class EvaluationController extends Controller
           ];
         });
 
-      // ... reste du code ...
-
       return Inertia::render('Evaluations/Responses', [
         'tokens' => $tokens,
         'module' => Module::findOrFail($moduleId),
@@ -470,7 +468,7 @@ class EvaluationController extends Controller
         $sheetCourante->fromArray([$headers], null, 'A1');
       }
 
-      // Activer l'onglet courant - CORRECTION ICI
+      // Activer l'onglet courant
       $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($sheetCourante));
 
       // Déterminer la première ligne vide

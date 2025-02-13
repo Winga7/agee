@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link } from "@inertiajs/vue3";
+import axios from "axios";
 
 const props = defineProps({
   tokens: {
@@ -68,13 +69,51 @@ const tokensWithAnswers = computed(() => {
   return props.tokens.filter((t) => t.answers);
 });
 
-const downloadUrl = computed(() => {
-  return route("evaluations.download", {
-    module: props.module.id,
-    class: props.classGroup.id,
-    date: props.date,
-  });
-});
+// Ajout des états pour le modal
+const isModalOpen = ref(false);
+const selectedResponse = ref(null);
+
+// Fonction pour ouvrir le modal
+const openResponseModal = (token) => {
+  selectedResponse.value = token;
+  isModalOpen.value = true;
+};
+
+// Fonction pour fermer le modal
+const closeModal = () => {
+  selectedResponse.value = null;
+  isModalOpen.value = false;
+};
+
+// Supprimer downloadUrl computed car on va utiliser une fonction à la place
+const downloadExcel = async () => {
+  try {
+    const response = await axios.get(
+      route("evaluations.download", {
+        module: props.module.id,
+        class: props.classGroup.id,
+        date: props.date,
+      }),
+      { responseType: "blob" } // Important pour les fichiers
+    );
+
+    // Créer un lien temporaire pour le téléchargement
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `evaluations-${props.module.title}-${formatDate(props.date)}.xlsx`
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Erreur lors du téléchargement:", error);
+    alert("Une erreur est survenue lors du téléchargement du fichier Excel");
+  }
+};
 </script>
 
 <template>
@@ -93,26 +132,36 @@ const downloadUrl = computed(() => {
                 Date d'envoi : {{ formatDate(date) }}
               </p>
             </div>
-            <a
-              :href="downloadUrl"
-              class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+            <button
+              @click="downloadExcel"
+              class="inline-flex items-center px-4 py-2 bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700 rounded-md shadow-sm transition-colors duration-200 font-medium"
             >
               <svg
+                class="w-5 h-5 mr-2"
                 xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                viewBox="0 0 48 48"
               >
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  fill="#185ABD"
+                  d="M41,10H25V7c0-1.105-0.895-2-2-2H7C5.895,5,5,5.895,5,7v34c0,1.105,0.895,2,2,2h34c1.105,0,2-0.895,2-2V12C43,10.895,42.105,10,41,10z"
+                />
+                <path
+                  fill="#21A366"
+                  d="M41,10H25v27h16c1.105,0,2-0.895,2-2V12C43,10.895,42.105,10,41,10z"
+                />
+                <path fill="#107C41" d="M25,10h16v27H25V10z" />
+                <path
+                  fill="#000000"
+                  opacity=".1"
+                  d="M30.31,23.48l-2.39-2.39l-3.59,3.59l-2.39-2.39l-3.59,3.59V31h15.96v-4.52L30.31,23.48z"
+                />
+                <path
+                  fill="#FFFFFF"
+                  d="M19.32,30.68h-3.55l4.42-6.88l-4.06-6.28h3.63l2.45,3.93l2.39-3.93h3.51l-4.05,6.54l4.46,6.62h-3.74l-2.77-4.26L19.32,30.68z"
                 />
               </svg>
               Télécharger Excel
-            </a>
+            </button>
           </div>
 
           <!-- Statistiques -->
@@ -183,19 +232,13 @@ const downloadUrl = computed(() => {
                     {{ token.used_at ? formatDate(token.used_at) : "-" }}
                   </td>
                   <td class="px-6 py-4">
-                    <div v-if="token.answers" class="space-y-2">
-                      <div
-                        v-for="(answer, questionId) in token.answers"
-                        :key="questionId"
-                        class="mb-4"
+                    <div v-if="token.answers">
+                      <button
+                        @click="openResponseModal(token)"
+                        class="text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        <div class="font-semibold text-gray-700">
-                          {{ answer.question }}
-                        </div>
-                        <div class="text-gray-600 mt-1">
-                          {{ answer.answer }}
-                        </div>
-                      </div>
+                        Voir les réponses
+                      </button>
                     </div>
                     <span v-else class="text-gray-400">Pas de réponse</span>
                   </td>
@@ -206,5 +249,91 @@ const downloadUrl = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- Modal des réponses -->
+    <div
+      v-if="isModalOpen"
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50"
+      @click.self="closeModal"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-medium text-gray-900">
+                Réponses détaillées
+              </h3>
+              <p class="text-sm text-gray-500 mt-1">
+                Répondu le
+                {{
+                  selectedResponse?.used_at
+                    ? formatDate(selectedResponse.used_at)
+                    : "-"
+                }}
+              </p>
+            </div>
+            <button
+              @click="closeModal"
+              class="text-gray-400 hover:text-gray-500"
+            >
+              <svg
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="px-6 py-4">
+          <div v-if="selectedResponse?.answers" class="space-y-6">
+            <div
+              v-for="(answer, questionId) in selectedResponse.answers"
+              :key="questionId"
+              class="border-b border-gray-200 last:border-0 pb-4 last:pb-0"
+            >
+              <h4 class="font-medium text-gray-900 mb-2">
+                {{ answer.question }}
+              </h4>
+              <p class="text-gray-700 whitespace-pre-wrap">
+                {{ answer.answer }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <div class="flex justify-end">
+            <button
+              @click="closeModal"
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 font-medium"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </AppLayout>
 </template>
+<style scoped>
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+</style>
