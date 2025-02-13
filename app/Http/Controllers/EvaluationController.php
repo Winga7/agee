@@ -425,38 +425,38 @@ class EvaluationController extends Controller
         mkdir($directory, 0755, true);
       }
 
-      // Charger le fichier existant ou en créer un nouveau
+      $spreadsheet = null;
+      $sheet = null;
+
+      // Charger ou créer le fichier Excel
       if (file_exists($filePath)) {
         $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
 
-        // Chercher si l'onglet pour ce module existe déjà
-        $sheet = null;
+        // Chercher l'onglet existant
         foreach ($spreadsheet->getAllSheets() as $worksheet) {
           if ($worksheet->getTitle() === $sheetTitle) {
             $sheet = $worksheet;
+            $spreadsheet->setActiveSheet($sheet);
             break;
           }
         }
+      }
 
-        // Si l'onglet n'existe pas, le créer
-        if (!$sheet) {
-          $spreadsheet->createSheet();
-          $sheet = $spreadsheet->setActiveSheetIndex($spreadsheet->getSheetCount() - 1);
-          $sheet->setTitle($sheetTitle);
-
-          // Écrire les en-têtes pour le nouvel onglet
-          $headers = ['Horodatage'];
-          foreach ($questionMap as $questionId => $question) {
-            $headers[] = $question;
-          }
-          $sheet->fromArray([$headers], null, 'A1');
-        }
-      } else {
+      // Si le fichier n'existe pas ou l'onglet n'existe pas
+      if (!$spreadsheet) {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle($sheetTitle);
+      }
 
-        // Écrire les en-têtes pour le nouveau fichier
+      if (!$sheet) {
+        $sheet = $spreadsheet->createSheet();
+        $spreadsheet->setActiveSheet($sheet);
+      }
+
+      $sheet->setTitle($sheetTitle);
+
+      // Vérifier si l'onglet est vide (nouveau) et ajouter les en-têtes si nécessaire
+      if ($sheet->getHighestRow() === 1 && $sheet->getHighestColumn() === 'A') {
         $headers = ['Horodatage'];
         foreach ($questionMap as $questionId => $question) {
           $headers[] = $question;
@@ -464,7 +464,7 @@ class EvaluationController extends Controller
         $sheet->fromArray([$headers], null, 'A1');
       }
 
-      // Trouver la dernière ligne utilisée dans l'onglet
+      // Trouver la dernière ligne utilisée
       $lastRow = $sheet->getHighestRow();
 
       // Ajouter les nouvelles réponses à la suite
@@ -475,7 +475,6 @@ class EvaluationController extends Controller
           $token['used_at']
         ];
 
-        // Ajouter les réponses dans l'ordre des questions du mapping
         foreach ($questionMap as $questionId => $question) {
           $answer = $token['answers'][$questionId] ?? '';
           $rowData[] = is_array($answer) ? implode(', ', $answer) : $answer;
@@ -490,6 +489,7 @@ class EvaluationController extends Controller
         $sheet->getColumnDimension($col)->setAutoSize(true);
       }
 
+      // Sauvegarder le fichier
       $writer = new Xlsx($spreadsheet);
       $writer->save($filePath);
 
