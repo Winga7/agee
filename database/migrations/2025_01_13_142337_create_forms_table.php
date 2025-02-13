@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('banner_image')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

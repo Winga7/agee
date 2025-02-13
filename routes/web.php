@@ -11,6 +11,10 @@ use App\Http\Controllers\CourseEnrollmentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Laravel\Fortify\Fortify;
+
+// Désactiver l'enregistrement
+Fortify::registerView(null);
 
 Route::get('/', function () {
   return Inertia::render('Welcome', [
@@ -39,6 +43,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/evaluations/generate-tokens', [EvaluationController::class, 'generateTokensForGroup'])
       ->name('evaluations.generate-tokens');
     Route::resource('evaluations', EvaluationController::class);
+    Route::get('/evaluations/download/{module}/{class}/{date}', [EvaluationController::class, 'downloadExcel'])
+      ->name('evaluations.download');
   });
 
   Route::get('/api/dashboard/stats', [DashboardController::class, 'getFilteredStats']);
@@ -76,7 +82,14 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 // Routes publiques pour les évaluations par token
 Route::get('/evaluate/{token}', [EvaluationController::class, 'createWithToken'])
   ->name('evaluations.create-with-token');
-Route::post('/evaluate/{token}', [EvaluationController::class, 'store'])
+Route::post('/evaluate/{token}', [EvaluationController::class, 'storeWithToken'])
   ->name('evaluations.store-with-token');
 
 Route::post('/enrollments', [CourseEnrollmentController::class, 'store'])->name('enrollments.store');
+
+Route::get('/evaluations/thank-you', function () {
+  return Inertia::render('Evaluations/ThankYou');
+})->name('evaluations.thank-you');
+
+Route::get('/evaluations/responses/{module}/{class}/{date}', [EvaluationController::class, 'showResponses'])
+  ->name('evaluations.responses');

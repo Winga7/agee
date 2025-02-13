@@ -122,25 +122,44 @@ class ModuleController extends Controller
     return redirect()->back()->with('success', 'Module supprimé avec succès');
   }
 
-  public function getGroups(Module $module)
+  public function getGroups($id)
   {
-    // Récupérer tous les groupes distincts pour ce module
-    $groups = CourseEnrollment::where('module_id', $module->id)
-      ->select('class_group')
-      ->distinct()
-      ->get()
-      ->pluck('class_group');
+    try {
+      $module = Module::with(['classes.students', 'courseEnrollments.student'])->findOrFail($id);
 
-    // Récupérer tous les étudiants pour ce module, groupés par classe
-    $students = CourseEnrollment::where('module_id', $module->id)
-      ->with('student')
-      ->get()
-      ->unique('student_id') // Éviter les doublons d'étudiants
-      ->groupBy('class_group');
+      // Récupérer les classes avec leur nom
+      $groups = $module->classes->pluck('name')->unique()->values();
 
-    return response()->json([
-      'groups' => $groups,
-      'students' => $students
-    ]);
+      // Récupérer les étudiants par classe en utilisant la relation courseEnrollments
+      $students = [];
+      foreach ($module->classes as $class) {
+        $students[$class->name] = CourseEnrollment::where('module_id', $module->id)
+          ->where('class_id', $class->id)  // Changement de class_group_id à class_id pour correspondre à la structure
+          ->with(['student', 'module'])
+          ->get()
+          ->map(function ($enrollment) {
+            return [
+              'student' => $enrollment->student,
+              'enrollment' => [
+                'id' => $enrollment->id,
+                'start_date' => $enrollment->start_date,
+                'end_date' => $enrollment->end_date
+              ]
+            ];
+          });
+      }
+
+      return response()->json([
+        'groups' => $groups,
+        'students' => $students
+      ]);
+    } catch (\Exception $e) {
+      Log::error('Erreur dans getGroups:', [
+        'error' => $e->getMessage(),
+        'module_id' => $id,
+        'trace' => $e->getTraceAsString()
+      ]);
+      return response()->json(['error' => 'Erreur lors de la récupération des groupes'], 500);
+    }
   }
 }

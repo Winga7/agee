@@ -6,41 +6,40 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
-    public function up(): void
-    {
-        Schema::create('evaluations', function (Blueprint $table) {
-            $table->id();
+  /**
+   * Run the migrations.
+   */
+  public function up(): void
+  {
+    Schema::create('evaluations', function (Blueprint $table) {
+      $table->id();
 
-            // Hash anonyme de l'utilisateur (pour éviter les doublons)
-            $table->string('user_hash')->nullable();
-            $table->index('user_hash');
+      // Hash anonyme de l'utilisateur
+      $table->string('user_hash')->nullable();
+      $table->index('user_hash');
 
-            // Lien avec le module
-            $table->unsignedBigInteger('module_id');
-            $table->foreign('module_id')->references('id')->on('modules')->onDelete('cascade');
+      // Relations
+      $table->foreignId('module_id')->constrained('modules')->onDelete('cascade');
+      $table->foreignId('form_id')->constrained('forms')->onDelete('cascade');
 
-            // Évaluation
-            $table->tinyInteger('score');
-            $table->text('original_comment')->nullable();
-            $table->text('anonymized_comment')->nullable();
-            $table->boolean('is_anonymized')->default(false);
-            $table->enum('status', ['pending', 'completed'])->default('pending');
+      // Données d'évaluation
+      $table->json('answers')->nullable();
+      $table->integer('score')->nullable();
+      $table->text('original_comment')->nullable();
+      $table->text('anonymized_comment')->nullable();
+      $table->boolean('is_anonymized')->default(false);
+      $table->enum('status', ['pending', 'completed'])->default('pending');
 
-            // Contrainte unique pour empêcher les doubles évaluations
-            $table->unique(['user_hash', 'module_id']);
 
-            $table->timestamps();
-        });
-    }
+      $table->timestamps();
+    });
+  }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::dropIfExists('evaluations');
-    }
+  /**
+   * Reverse the migrations.
+   */
+  public function down(): void
+  {
+    Schema::dropIfExists('evaluations');
+  }
 };
