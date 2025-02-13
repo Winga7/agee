@@ -43,6 +43,8 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::post('/evaluations/generate-tokens', [EvaluationController::class, 'generateTokensForGroup'])
       ->name('evaluations.generate-tokens');
     Route::resource('evaluations', EvaluationController::class);
+    Route::get('/evaluations/download/{module}/{class}/{date}', [EvaluationController::class, 'downloadExcel'])
+      ->name('evaluations.download');
   });
 
   Route::get('/api/dashboard/stats', [DashboardController::class, 'getFilteredStats']);

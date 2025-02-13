@@ -375,28 +375,40 @@ class EvaluationController extends Controller
         ->where('class_id', $classId)
         ->whereDate('created_at', $searchDate)
         ->get()
-        ->map(function ($token) {
+        ->map(function ($token) use ($questionMap) {
           $userHash = hash('sha256', $token->token . $token->student_email . env('APP_KEY'));
           $evaluation = Evaluation::where('user_hash', $userHash)
             ->where('module_id', $token->module_id)
             ->first();
 
+          // Formater les réponses avec les questions
+          $formattedAnswers = null;
+          if ($evaluation && $evaluation->answers) {
+            $formattedAnswers = [];
+            foreach ($evaluation->answers as $questionId => $answer) {
+              $formattedAnswers[$questionId] = [
+                'question' => $questionMap[$questionId] ?? "Question $questionId",
+                'answer' => $answer
+              ];
+            }
+          }
+
           return [
             'student_email' => $token->student_email,
             'used_at' => $token->used_at,
             'isExpired' => $token->isExpired(),
-            'answers' => $evaluation ? $evaluation->answers : null
+            'answers' => $formattedAnswers
           ];
         });
 
-      // Passer le mapping des questions à la fonction d'export
-      $this->exportToExcel($tokens, $moduleId, $classId, $date, $questionMap);
+      // ... reste du code ...
 
       return Inertia::render('Evaluations/Responses', [
         'tokens' => $tokens,
         'module' => Module::findOrFail($moduleId),
         'classGroup' => ClassGroup::findOrFail($classId),
-        'date' => $date
+        'date' => $date,
+        'questions' => $questionMap
       ]);
     } catch (\Exception $e) {
       Log::error('Erreur:', ['message' => $e->getMessage()]);
@@ -507,6 +519,67 @@ class EvaluationController extends Controller
         'trace' => $e->getTraceAsString()
       ]);
       throw $e;
+    }
+  }
+
+  public function downloadExcel($moduleId, $classId, $date)
+  {
+    try {
+      $searchDate = \Carbon\Carbon::parse($date)->format('Y-m-d');
+
+      // Récupérer les données comme dans showResponses
+      $firstToken = EvaluationToken::where('module_id', $moduleId)
+        ->where('class_id', $classId)
+        ->whereDate('created_at', $searchDate)
+        ->first();
+
+      if (!$firstToken) {
+        return response()->json(['error' => 'Aucune donnée trouvée'], 404);
+      }
+
+      // Récupérer le formulaire avec ses questions
+      $form = Form::with('sections.questions')
+        ->findOrFail($firstToken->form_id);
+
+      // Créer le mapping des questions
+      $questionMap = [];
+      foreach ($form->sections as $section) {
+        foreach ($section->questions as $question) {
+          $questionMap[$question->id] = $question->question;
+        }
+      }
+
+      // Récupérer les tokens avec leurs réponses
+      $tokens = EvaluationToken::where('module_id', $moduleId)
+        ->where('class_id', $classId)
+        ->whereDate('created_at', $searchDate)
+        ->get()
+        ->map(function ($token) use ($questionMap) {
+          $userHash = hash('sha256', $token->token . $token->student_email . env('APP_KEY'));
+          $evaluation = Evaluation::where('user_hash', $userHash)
+            ->where('module_id', $token->module_id)
+            ->first();
+
+          return [
+            'used_at' => $token->used_at ? $token->used_at->format('Y-m-d H:i:s') : null,
+            'answers' => $evaluation ? $evaluation->answers : null
+          ];
+        });
+
+      // Générer le fichier Excel
+      $this->exportToExcel($tokens, $moduleId, $classId, $date, $questionMap);
+
+      // Télécharger le fichier
+      $filePath = storage_path('app/public/exports/evaluations.xlsx');
+
+      if (!file_exists($filePath)) {
+        return response()->json(['error' => 'Erreur lors de la génération du fichier'], 404);
+      }
+
+      return response()->download($filePath);
+    } catch (\Exception $e) {
+      Log::error('Erreur lors du téléchargement:', ['error' => $e->getMessage()]);
+      return response()->json(['error' => 'Erreur lors du téléchargement'], 500);
     }
   }
 }
