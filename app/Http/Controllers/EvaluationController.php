@@ -351,16 +351,30 @@ class EvaluationController extends Controller
     try {
       $searchDate = \Carbon\Carbon::parse($date)->format('Y-m-d');
 
-      // Modifié pour joindre correctement les évaluations via user_hash
+      // Récupérer d'abord un token pour avoir accès au form_id
+      $firstToken = EvaluationToken::where('module_id', $moduleId)
+        ->where('class_id', $classId)
+        ->whereDate('created_at', $searchDate)
+        ->first();
+
+      // Récupérer le formulaire avec ses questions
+      $form = Form::with('sections.questions')
+        ->findOrFail($firstToken->form_id);
+
+      // Créer un mapping des IDs de questions vers leurs énoncés
+      $questionMap = [];
+      foreach ($form->sections as $section) {
+        foreach ($section->questions as $question) {
+          $questionMap[$question->id] = $question->question;
+        }
+      }
+
       $tokens = EvaluationToken::where('module_id', $moduleId)
         ->where('class_id', $classId)
         ->whereDate('created_at', $searchDate)
         ->get()
         ->map(function ($token) {
-          // Créer le hash pour la correspondance
           $userHash = hash('sha256', $token->token . $token->student_email . env('APP_KEY'));
-
-          // Chercher l'évaluation correspondante
           $evaluation = Evaluation::where('user_hash', $userHash)
             ->where('module_id', $token->module_id)
             ->first();
@@ -373,8 +387,8 @@ class EvaluationController extends Controller
           ];
         });
 
-      // Après avoir récupéré les tokens, on exporte vers Excel
-      $this->exportToExcel($tokens, $moduleId, $classId, $date);
+      // Passer le mapping des questions à la fonction d'export
+      $this->exportToExcel($tokens, $moduleId, $classId, $date, $questionMap);
 
       return Inertia::render('Evaluations/Responses', [
         'tokens' => $tokens,
@@ -388,7 +402,7 @@ class EvaluationController extends Controller
     }
   }
 
-  private function exportToExcel($tokens, $moduleId, $classId, $date)
+  private function exportToExcel($tokens, $moduleId, $classId, $date, $questionMap)
   {
     try {
       $fileName = 'evaluations.xlsx';
@@ -426,7 +440,8 @@ class EvaluationController extends Controller
 
       if ($firstResponse && !empty($firstResponse['answers'])) {
         foreach ($firstResponse['answers'] as $questionId => $answer) {
-          $headers[] = "Question $questionId";
+          // Utiliser l'énoncé de la question au lieu de "Question X"
+          $headers[] = $questionMap[$questionId] ?? "Question $questionId";
         }
       }
 
