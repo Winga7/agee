@@ -18,6 +18,8 @@ use App\Models\Form;
 use App\Models\ClassGroup;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class EvaluationController extends Controller
 {
@@ -409,65 +411,60 @@ class EvaluationController extends Controller
       $directory = storage_path('app/public/exports');
       $filePath = $directory . '/' . $fileName;
 
-      // Récupérer les informations du module et de la classe pour le titre de l'onglet
+      // Récupérer les informations du module et de la classe
       $module = Module::findOrFail($moduleId);
       $class = ClassGroup::findOrFail($classId);
 
-      // Le titre de l'onglet sera basé sur le module et la classe
-      $sheetTitle = sprintf(
-        '%s_%s',
-        $module->code ?? $moduleId,
-        $class->name ?? $classId
-      );
+      // Le titre de l'onglet sera basé sur le module uniquement
+      $sheetTitle = $module->code ?? "Module_$moduleId";
 
       // Créer le répertoire s'il n'existe pas
       if (!file_exists($directory)) {
         mkdir($directory, 0755, true);
       }
 
-      $spreadsheet = null;
-      $sheet = null;
-
-      // Charger ou créer le fichier Excel
+      // Charger le fichier existant ou créer un nouveau
       if (file_exists($filePath)) {
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+        $spreadsheet = IOFactory::load($filePath);
+        // Supprimer la feuille par défaut si c'est un nouveau fichier
+        if ($spreadsheet->getSheetCount() === 1 && $spreadsheet->getSheet(0)->getHighestRow() === 1) {
+          $spreadsheet->removeSheetByIndex(0);
+        }
+      } else {
+        $spreadsheet = new Spreadsheet();
+        // Supprimer la feuille par défaut
+        $spreadsheet->removeSheetByIndex(0);
+      }
 
-        // Chercher l'onglet existant
-        foreach ($spreadsheet->getAllSheets() as $worksheet) {
-          if ($worksheet->getTitle() === $sheetTitle) {
-            $sheet = $worksheet;
-            $spreadsheet->setActiveSheet($sheet);
-            break;
-          }
+      // Chercher si l'onglet existe déjà
+      $sheetCourante = null;
+      foreach ($spreadsheet->getAllSheets() as $sheet) {
+        if ($sheet->getTitle() === $sheetTitle) {
+          $sheetCourante = $sheet;
+          break;
         }
       }
 
-      // Si le fichier n'existe pas ou l'onglet n'existe pas
-      if (!$spreadsheet) {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-      }
+      // Si l'onglet n'existe pas, le créer
+      if ($sheetCourante === null) {
+        $sheetCourante = new Worksheet($spreadsheet, $sheetTitle);
+        $spreadsheet->addSheet($sheetCourante);
 
-      if (!$sheet) {
-        $sheet = $spreadsheet->createSheet();
-        $spreadsheet->setActiveSheet($sheet);
-      }
-
-      $sheet->setTitle($sheetTitle);
-
-      // Vérifier si l'onglet est vide (nouveau) et ajouter les en-têtes si nécessaire
-      if ($sheet->getHighestRow() === 1 && $sheet->getHighestColumn() === 'A') {
+        // Ajouter les en-têtes pour le nouvel onglet
         $headers = ['Horodatage'];
         foreach ($questionMap as $questionId => $question) {
           $headers[] = $question;
         }
-        $sheet->fromArray([$headers], null, 'A1');
+        $sheetCourante->fromArray([$headers], null, 'A1');
       }
 
-      // Trouver la dernière ligne utilisée
-      $lastRow = $sheet->getHighestRow();
+      // Activer l'onglet courant - CORRECTION ICI
+      $spreadsheet->setActiveSheetIndex($spreadsheet->getIndex($sheetCourante));
 
-      // Ajouter les nouvelles réponses à la suite
+      // Déterminer la première ligne vide
+      $lastRow = $sheetCourante->getHighestRow();
+
+      // Ajouter les nouvelles réponses
       foreach ($tokens as $token) {
         if (empty($token['answers'])) continue;
 
@@ -481,26 +478,35 @@ class EvaluationController extends Controller
         }
 
         $lastRow++;
-        $sheet->fromArray([$rowData], null, 'A' . $lastRow);
+        $sheetCourante->fromArray([$rowData], null, 'A' . $lastRow);
       }
 
       // Ajuster la largeur des colonnes
-      foreach (range('A', $sheet->getHighestColumn()) as $col) {
-        $sheet->getColumnDimension($col)->setAutoSize(true);
+      foreach (range('A', $sheetCourante->getHighestColumn()) as $col) {
+        $sheetCourante->getColumnDimension($col)->setAutoSize(true);
       }
 
-      // Sauvegarder le fichier
-      $writer = new Xlsx($spreadsheet);
-      $writer->save($filePath);
-
-      // Nettoyer la mémoire
-      $spreadsheet->disconnectWorksheets();
-      unset($spreadsheet);
+      // Sauvegarder avec gestion des erreurs
+      try {
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        $writer->save($filePath);
+      } catch (\Exception $e) {
+        Log::error('Erreur sauvegarde Excel:', [
+          'message' => $e->getMessage(),
+          'trace' => $e->getTraceAsString()
+        ]);
+        throw $e;
+      } finally {
+        // Nettoyer la mémoire
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet);
+      }
     } catch (\Exception $e) {
       Log::error('Erreur export Excel:', [
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
       ]);
+      throw $e;
     }
   }
 }
