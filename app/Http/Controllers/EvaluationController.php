@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Models\Form;
 use App\Models\ClassGroup;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class EvaluationController extends Controller
 {
@@ -371,6 +373,9 @@ class EvaluationController extends Controller
           ];
         });
 
+      // Après avoir récupéré les tokens, on exporte vers Excel
+      $this->exportToExcel($tokens, $moduleId, $classId, $date);
+
       return Inertia::render('Evaluations/Responses', [
         'tokens' => $tokens,
         'module' => Module::findOrFail($moduleId),
@@ -378,12 +383,72 @@ class EvaluationController extends Controller
         'date' => $date
       ]);
     } catch (\Exception $e) {
-      Log::error('Erreur dans showResponses:', [
+      Log::error('Erreur:', ['message' => $e->getMessage()]);
+      return redirect()->back()->with('error', 'Une erreur est survenue.');
+    }
+  }
+
+  private function exportToExcel($tokens, $moduleId, $classId, $date)
+  {
+    try {
+      $spreadsheet = new Spreadsheet();
+      $sheet = $spreadsheet->getActiveSheet();
+
+      // En-tête avec horodatage et questions
+      $headers = ['Horodatage'];
+      $firstResponse = $tokens->first(function ($token) {
+        return !empty($token['answers']);
+      });
+
+      if ($firstResponse && !empty($firstResponse['answers'])) {
+        foreach ($firstResponse['answers'] as $questionId => $answer) {
+          $headers[] = "Question $questionId";
+        }
+      }
+
+      // Écrire les en-têtes
+      $sheet->fromArray([$headers], null, 'A1');
+
+      // Ajouter les réponses
+      $row = 2;
+      foreach ($tokens as $token) {
+        if (empty($token['answers'])) continue;
+
+        $rowData = [$token['used_at']]; // Horodatage
+        foreach ($token['answers'] as $answer) {
+          $rowData[] = is_array($answer) ? implode(', ', $answer) : $answer;
+        }
+        $sheet->fromArray([$rowData], null, 'A' . $row);
+        $row++;
+      }
+
+      // Générer le nom du fichier
+      $fileName = sprintf(
+        'evaluations_%s_%s_%s.xlsx',
+        $moduleId,
+        $classId,
+        \Carbon\Carbon::parse($date)->format('Y-m-d')
+      );
+
+      // Créer le répertoire s'il n'existe pas
+      $directory = storage_path('app/public/exports');
+      if (!file_exists($directory)) {
+        mkdir($directory, 0755, true);
+      }
+
+      $filePath = $directory . '/' . $fileName;
+
+      $writer = new Xlsx($spreadsheet);
+      $writer->save($filePath);
+
+      // Nettoyer la mémoire
+      $spreadsheet->disconnectWorksheets();
+      unset($spreadsheet);
+    } catch (\Exception $e) {
+      Log::error('Erreur export Excel:', [
         'message' => $e->getMessage(),
         'trace' => $e->getTraceAsString()
       ]);
-
-      return redirect()->back()->with('error', 'Erreur lors de la récupération des réponses.');
     }
   }
 }
