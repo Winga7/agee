@@ -4,18 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Evaluation;
 use App\Models\EvaluationToken;
-use App\Services\AIService;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\EvaluationInvitation;
-use App\Models\CourseEnrollment;
+use App\Models\Form;
 use App\Models\Module;
+use App\Models\Student;
+use App\Models\CourseEnrollment;
+use App\Models\ClassGroup;
+use App\Services\AIService;
+use App\Mail\EvaluationInvitation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use App\Models\Form;
-use App\Models\ClassGroup;
+use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -25,139 +26,80 @@ class EvaluationController extends Controller
 {
   private $aiService;
 
+  /**
+   * Constructeur avec injection du service AI
+   *
+   * @param AIService $aiService
+   */
   public function __construct(AIService $aiService)
   {
     $this->aiService = $aiService;
   }
 
   /**
-   * Display a listing of the resource.
-   */
-  public function index()
-  {
-    $evaluations = Evaluation::with('module')->get();
-    $modules = Module::all();
-
-    return Inertia::render('Evaluations/Index', [
-      'evaluations' => $evaluations,
-      'modules' => $modules
-    ]);
-  }
-
-  /**
-   * Show the form for creating a new resource.
-   */
-  public function create()
-  {
-    return Inertia::render('Evaluations/Create', [
-      'modules' => \App\Models\Module::with('professor')->get()
-    ]);
-  }
-
-  /**
-   * Store a newly created resource in storage.
+   * Enregistre une nouvelle évaluation
+   *
+   * @param Request $request
+   * @return \Illuminate\Http\RedirectResponse
    */
   public function store(Request $request)
   {
-    $request->validate([
-      'module_id' => 'required|exists:modules,id',
-      'class_id' => 'required|exists:classes,id'
-    ]);
-
     try {
       DB::beginTransaction();
 
-      $enrollments = CourseEnrollment::where('module_id', $request->module_id)
-        ->where('class_id', $request->class_id)
+      $validated = $request->validate([
+        'module_id' => 'required|exists:modules,id',
+        'class_id' => 'required|exists:classes,id'
+      ]);
+
+      Log::info('Début de création d\'évaluation', $validated);
+
+      $enrollments = CourseEnrollment::where('module_id', $validated['module_id'])
+        ->where('class_id', $validated['class_id'])
         ->with('student')
         ->get();
 
       foreach ($enrollments as $enrollment) {
         // Invalider les anciens tokens
         EvaluationToken::where('student_email', $enrollment->student->email)
-          ->where('module_id', $request->module_id)
-          ->where('class_id', $request->class_id)
+          ->where('module_id', $validated['module_id'])
+          ->where('class_id', $validated['class_id'])
           ->where('is_used', false)
           ->update(['is_used' => true]);
 
-        // Créer un nouveau token
-        $token = Str::random(32);
-        EvaluationToken::create([
-          'token' => $token,
+        // Créer et envoyer un nouveau token
+        $token = EvaluationToken::create([
+          'token' => Str::random(32),
           'student_email' => $enrollment->student->email,
-          'module_id' => $request->module_id,
-          'class_id' => $request->class_id,
+          'module_id' => $validated['module_id'],
+          'class_id' => $validated['class_id'],
           'expires_at' => now()->addDays(7),
         ]);
 
-        // TODO: Envoyer l'email avec le token
+        Mail::to($enrollment->student->email)
+          ->send(new EvaluationInvitation($token));
+
+        Log::info('Token créé et envoyé', [
+          'token_id' => $token->id,
+          'student_email' => $enrollment->student->email
+        ]);
       }
 
       DB::commit();
-      return back()->with('success', 'Invitations envoyées avec succès');
+
+      Log::info('Évaluation créée avec succès', [
+        'enrollments_count' => $enrollments->count()
+      ]);
+
+      return redirect()->back()->with('success', 'Invitations envoyées avec succès');
     } catch (\Exception $e) {
       DB::rollBack();
-      Log::error('Erreur lors de l\'envoi des invitations:', ['error' => $e->getMessage()]);
-      return back()->with('error', 'Une erreur est survenue lors de l\'envoi des invitations.');
+      Log::error('Erreur lors de la création de l\'évaluation', [
+        'error' => $e->getMessage(),
+        'request_data' => $request->all()
+      ]);
+      return redirect()->back()->with('error', 'Erreur lors de l\'envoi des invitations');
     }
-  }
-
-  /**
-   * Display the specified resource.
-   */
-  public function show(Evaluation $evaluation)
-  {
-    // On ne montre que le commentaire anonymisé
-    return Inertia::render('Evaluations/Show', [
-      'evaluation' => $evaluation->load('module.professor')
-    ]);
-  }
-
-  /**
-   * Show the form for editing the specified resource.
-   */
-  public function edit(Evaluation $evaluation)
-  {
-    // Récupérer la liste des modules si on veut changer le module lié
-    $modules = Module::all();
-
-    return Inertia::render('Evaluations/Edit', [
-      'evaluation' => $evaluation,
-      'modules'    => $modules,
-    ]);
-  }
-
-  /**
-   * Update the specified resource in storage.
-   */
-  public function update(Request $request, Evaluation $evaluation)
-  {
-    $request->validate([
-      'module_id' => 'required|exists:modules,id',
-      'score'     => 'required|integer|between:1,5',
-      'comment'   => 'nullable|string',
-    ]);
-
-    $evaluation->update([
-      'module_id' => $request->module_id,
-      'score'     => $request->score,
-      'comment'   => $request->comment,
-      'status'    => 'completed'
-    ]);
-
-    return to_route('evaluations.index')
-      ->with('success', 'Évaluation mise à jour avec succès !');
-  }
-
-  /**
-   * Remove the specified resource from storage.
-   */
-  public function destroy(Evaluation $evaluation)
-  {
-    $evaluation->delete();
-
-    return to_route('evaluations.index')
-      ->with('success', 'Évaluation supprimée avec succès !');
   }
 
   public function manage()
