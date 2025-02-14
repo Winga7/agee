@@ -313,8 +313,11 @@ class EvaluationController extends Controller
       $totalStudents = $enrollments->count();
 
       foreach ($enrollments as $enrollment) {
+        // Déterminer l'email à utiliser
+        $emailToUse = $enrollment->student->school_email ?? $enrollment->student->email;
+
         // Invalider les anciens tokens non utilisés
-        EvaluationToken::where('student_email', $enrollment->student->email)
+        EvaluationToken::where('student_email', $emailToUse)
           ->where('module_id', $module->id)
           ->where('class_id', $class->id)
           ->where('is_used', false)
@@ -324,14 +327,14 @@ class EvaluationController extends Controller
         $token = EvaluationToken::create([
           'token' => Str::random(64),
           'module_id' => $module->id,
-          'student_email' => $enrollment->student->email,
+          'student_email' => $emailToUse,
           'class_id' => $class->id,
           'form_id' => $request->form_id, // Ajoutez cette ligne
           'expires_at' => now()->addDays(7),
           'is_used' => false
         ]);
 
-        Mail::to($enrollment->student->email)
+        Mail::to($emailToUse)
           ->send(new EvaluationInvitation($token));
         $tokensGenerated++;
       }

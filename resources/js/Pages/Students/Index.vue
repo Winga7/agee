@@ -307,7 +307,6 @@ const viewDetails = (student) => {
                 v-model="form.school_email"
                 type="email"
                 class="mt-1 block w-full"
-                required
               />
               <InputError :message="form.errors.school_email" class="mt-2" />
             </div>

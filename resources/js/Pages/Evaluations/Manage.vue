@@ -21,8 +21,6 @@ const props = defineProps({
   },
 });
 
-console.log("Props reçues:", props.sentTokens);
-
 const selectedModule = ref("");
 const selectedGroup = ref("");
 const selectedForm = ref("");
@@ -57,7 +55,6 @@ const loadGroups = async () => {
     }
 
     const data = await response.json();
-    console.log("Données reçues:", data);
 
     if (data.groups && Array.isArray(data.groups)) {
       groups.value = data.groups;
@@ -300,7 +297,17 @@ const groupedTokens = computed(() => {
                 >
                   <td class="px-6 py-4">{{ enrollment.student.last_name }}</td>
                   <td class="px-6 py-4">{{ enrollment.student.first_name }}</td>
-                  <td class="px-6 py-4">{{ enrollment.student.email }}</td>
+                  <td class="px-6 py-4">
+                    {{
+                      enrollment.student.school_email ||
+                      enrollment.student.email
+                    }}
+                    <span
+                      v-if="enrollment.student.school_email"
+                      class="text-xs text-gray-500 ml-2"
+                      >(School)</span
+                    >
+                  </td>
                 </tr>
               </tbody>
             </table>
