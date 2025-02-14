@@ -1,13 +1,15 @@
 <?php
 
-use App\Http\Controllers\EvaluationController;
-use App\Http\Controllers\ModuleController;
-use App\Http\Controllers\ProfessorController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\FormController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\ClassController;
-use App\Http\Controllers\CourseEnrollmentController;
+use App\Http\Controllers\{
+  ClassController,
+  CourseEnrollmentController,
+  DashboardController,
+  EvaluationController,
+  FormController,
+  ModuleController,
+  ProfessorController,
+  StudentController
+};
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -16,6 +18,7 @@ use Laravel\Fortify\Fortify;
 // Désactiver l'enregistrement
 Fortify::registerView(null);
 
+// Page d'accueil
 Route::get('/', function () {
   return Inertia::render('Welcome', [
     'canLogin' => Route::has('login'),
@@ -27,69 +30,53 @@ Route::get('/', function () {
 
 // Routes protégées par authentification
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
-  // Dashboard
+  // Dashboard et API
   Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
-
-  // Modules
-  Route::resource('modules', ModuleController::class);
-
-  // Professors
-  Route::resource('professors', ProfessorController::class);
-
-  // Routes pour le pédagogue uniquement
-  Route::middleware(['role:pedagogue'])->group(function () {
-    Route::get('/evaluations/manage', [EvaluationController::class, 'manage'])
-      ->name('evaluations.manage');
-    Route::post('/evaluations/generate-tokens', [EvaluationController::class, 'generateTokensForGroup'])
-      ->name('evaluations.generate-tokens');
-    Route::resource('evaluations', EvaluationController::class);
-    Route::get('/evaluations/download/{module}/{class}/{date}', [EvaluationController::class, 'downloadExcel'])
-      ->name('evaluations.download');
-  });
-
   Route::get('/api/dashboard/stats', [DashboardController::class, 'getFilteredStats']);
-  // Ajouter dans le groupe middleware auth
   Route::get('/api/modules/{module}/groups', [ModuleController::class, 'getGroups']);
 
-  Route::middleware(['auth'])->group(function () {
-    Route::get('/forms', [FormController::class, 'index'])->name('forms.index');
-    Route::post('/forms', [FormController::class, 'store'])->name('forms.store');
-    Route::put('/forms/{form}', [FormController::class, 'update'])->name('forms.update');
-    Route::delete('/forms/{form}', [FormController::class, 'destroy'])->name('forms.destroy');
-    Route::put('/forms/{form}/toggle-active', [FormController::class, 'toggleActive'])->name('forms.toggle-active');
+  // Ressources de base
+  Route::resource('modules', ModuleController::class);
+  Route::resource('professors', ProfessorController::class);
+  Route::resource('students', StudentController::class);
+  Route::resource('classes', ClassController::class);
+
+  // Gestion des formulaires
+  Route::prefix('forms')->group(function () {
+    Route::get('/', [FormController::class, 'index'])->name('forms.index');
+    Route::post('/', [FormController::class, 'store'])->name('forms.store');
+    Route::put('/{form}', [FormController::class, 'update'])->name('forms.update');
+    Route::delete('/{form}', [FormController::class, 'destroy'])->name('forms.destroy');
+    Route::put('/{form}/toggle-active', [FormController::class, 'toggleActive'])->name('forms.toggle-active');
   });
 
-  Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
-    Route::resource('students', StudentController::class);
-    Route::post('/students/enroll', [StudentController::class, 'enroll'])->name('students.enroll');
-    Route::resource('classes', ClassController::class);
-  });
-
-  Route::middleware(['auth:sanctum', config('jetstream.auth_session')])
-    ->group(function () {
-      Route::post('/classes', [ClassController::class, 'store'])->name('classes.store');
-      Route::put('/classes/{class}', [ClassController::class, 'update'])->name('classes.update');
-      Route::delete('/classes/{class}', [ClassController::class, 'destroy'])->name('classes.destroy');
+  // Routes du pédagogue
+  Route::middleware(['role:pedagogue'])->group(function () {
+    Route::prefix('evaluations')->group(function () {
+      Route::get('/manage', [EvaluationController::class, 'manage'])->name('evaluations.manage');
+      Route::post('/generate-tokens', [EvaluationController::class, 'generateTokensForGroup'])->name('evaluations.generate-tokens');
+      Route::get('/download/{module}/{class}/{date}', [EvaluationController::class, 'downloadExcel'])->name('evaluations.download');
+      Route::resource('evaluations', EvaluationController::class);
     });
+  });
 
-  // Routes pour les professeurs
-  Route::get('/professors', [ProfessorController::class, 'index'])->name('professors.index');
-  Route::post('/professors', [ProfessorController::class, 'store'])->name('professors.store');
-  Route::put('/professors/{professor}', [ProfessorController::class, 'update'])->name('professors.update');
-  Route::delete('/professors/{professor}', [ProfessorController::class, 'destroy'])->name('professors.destroy');
+  // Inscriptions aux cours
+  Route::post('/students/enroll', [StudentController::class, 'enroll'])->name('students.enroll');
+  Route::post('/enrollments', [CourseEnrollmentController::class, 'store'])->name('enrollments.store');
 });
 
-// Routes publiques pour les évaluations par token
-Route::get('/evaluate/{token}', [EvaluationController::class, 'createWithToken'])
-  ->name('evaluations.create-with-token');
-Route::post('/evaluate/{token}', [EvaluationController::class, 'storeWithToken'])
-  ->name('evaluations.store-with-token');
+// Routes publiques des évaluations
+Route::prefix('evaluate')->group(function () {
+  Route::get('/{token}', [EvaluationController::class, 'createWithToken'])->name('evaluations.create-with-token');
+  Route::post('/{token}', [EvaluationController::class, 'storeWithToken'])->name('evaluations.store-with-token');
+});
 
-Route::post('/enrollments', [CourseEnrollmentController::class, 'store'])->name('enrollments.store');
+// Routes des réponses aux évaluations
+Route::prefix('evaluations')->group(function () {
+  Route::get('/thank-you', function () {
+    return Inertia::render('Evaluations/ThankYou');
+  })->name('evaluations.thank-you');
 
-Route::get('/evaluations/thank-you', function () {
-  return Inertia::render('Evaluations/ThankYou');
-})->name('evaluations.thank-you');
-
-Route::get('/evaluations/responses/{module}/{class}/{date}', [EvaluationController::class, 'showResponses'])
-  ->name('evaluations.responses');
+  Route::get('/responses/{module}/{class}/{date}', [EvaluationController::class, 'showResponses'])
+    ->name('evaluations.responses');
+});
