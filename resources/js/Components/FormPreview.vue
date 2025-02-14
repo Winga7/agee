@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import Modal from "@/Components/Modal.vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
 
@@ -104,25 +104,50 @@ const previousSection = () => {
 
 const initializeAnswers = () => {
   if (!props.form || !props.form.sections) return;
+
+  answers.value = {}; // Reset answers
+
   props.form.sections.forEach((section) => {
     section.questions.forEach((question) => {
-      if (question.type === "checkbox") {
-        answers.value[question.id] = [];
-      } else {
-        answers.value[question.id] = "";
+      // Initialisation spécifique selon le type
+      switch (question.type) {
+        case "checkbox":
+          answers.value[question.id] = [];
+          break;
+        case "radio":
+          answers.value[question.id] = "";
+          break;
+        case "rating":
+          answers.value[question.id] = 0;
+          break;
+        case "select":
+          answers.value[question.id] = "";
+          break;
+        default:
+          answers.value[question.id] = "";
       }
     });
   });
 };
 
+// Réinitialiser les réponses quand le formulaire change
+watch(
+  () => props.form,
+  () => {
+    initializeAnswers();
+  },
+  { deep: true }
+);
+
+// Réinitialiser les réponses au montage
+onMounted(() => {
+  initializeAnswers();
+});
+
 const resetPreview = () => {
   currentSection.value = 0;
   initializeAnswers();
 };
-
-onMounted(() => {
-  initializeAnswers();
-});
 
 const shouldShowSection = computed(() => {
   if (!currentSectionData.value) return false;
@@ -239,25 +264,6 @@ const shouldShowSection = computed(() => {
                   :required="question.is_required"
                 ></textarea>
 
-                <!-- Choix unique -->
-                <div v-else-if="question.type === 'radio'" class="space-y-2">
-                  <div
-                    v-for="option in question.options"
-                    :key="option"
-                    class="flex items-center"
-                  >
-                    <input
-                      type="radio"
-                      :name="`question-${question.id}`"
-                      :value="option"
-                      v-model="answers[question.id]"
-                      class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                      :required="question.is_required"
-                    />
-                    <label class="ml-3 text-gray-700">{{ option }}</label>
-                  </div>
-                </div>
-
                 <!-- Choix multiples -->
                 <div v-else-if="question.type === 'checkbox'" class="space-y-2">
                   <div
@@ -275,6 +281,25 @@ const shouldShowSection = computed(() => {
                         (!answers[question.id] ||
                           answers[question.id].length === 0)
                       "
+                    />
+                    <label class="ml-3 text-gray-700">{{ option }}</label>
+                  </div>
+                </div>
+
+                <!-- Choix unique -->
+                <div v-else-if="question.type === 'radio'" class="space-y-2">
+                  <div
+                    v-for="option in question.options"
+                    :key="option"
+                    class="flex items-center"
+                  >
+                    <input
+                      type="radio"
+                      :name="`question-${question.id}`"
+                      :value="option"
+                      v-model="answers[question.id]"
+                      class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                      :required="question.is_required"
                     />
                     <label class="ml-3 text-gray-700">{{ option }}</label>
                   </div>
