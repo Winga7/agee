@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Modal from "@/Components/Modal.vue";
@@ -10,6 +10,7 @@ import InputLabel from "@/Components/InputLabel.vue";
 import TextInput from "@/Components/TextInput.vue";
 import InputError from "@/Components/InputError.vue";
 import FormPreview from "@/Components/FormPreview.vue";
+import axios from "axios";
 
 const props = defineProps({
   forms: {
@@ -34,8 +35,8 @@ const form = useForm({
       title: "",
       description: "",
       order: 0,
-      depends_on_question_id: null, // S'assurer que c'est bien initialisé
-      depends_on_answer: null, // S'assurer que c'est bien initialisé
+      depends_on_question_id: null,
+      depends_on_answer: null,
       questions: [
         {
           id: Date.now(),
@@ -50,21 +51,6 @@ const form = useForm({
     },
   ],
 });
-
-watch(
-  () => form.sections,
-  (newSections) => {
-    console.log(
-      "Sections mises à jour:",
-      newSections.map((s) => ({
-        title: s.title,
-        depends_on_question_id: s.depends_on_question_id,
-        depends_on_answer: s.depends_on_answer,
-      }))
-    );
-  },
-  { deep: true }
-);
 
 const resetForm = () => {
   form.reset();
@@ -81,6 +67,14 @@ const resetForm = () => {
   ];
   isEditing.value = false;
   currentSection.value = 0;
+};
+
+const handleError = (error) => {
+  axios.post("/api/log", {
+    message: "Erreur lors de la manipulation du formulaire",
+    data: { error: error.message },
+    level: "error",
+  });
 };
 
 // Méthodes pour la gestion des sections
@@ -163,7 +157,7 @@ const submitForm = () => {
         window.location.reload();
       },
       onError: (errors) => {
-        console.error("Erreurs de validation:", errors);
+        handleError(errors);
       },
       preserveScroll: true,
     });
@@ -176,7 +170,7 @@ const submitForm = () => {
         window.location.reload();
       },
       onError: (errors) => {
-        console.error("Erreurs de validation:", errors);
+        handleError(errors);
       },
       preserveScroll: true,
     });
@@ -239,7 +233,7 @@ const confirmDelete = (formToDelete) => {
         // Le formulaire sera automatiquement retiré de la liste grâce à Inertia
       },
       onError: () => {
-        alert("Une erreur est survenue lors de la suppression du formulaire.");
+        handleError(new Error("Erreur lors de la suppression du formulaire"));
       },
     });
   }

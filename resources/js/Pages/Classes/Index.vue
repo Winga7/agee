@@ -10,6 +10,7 @@ import TextInput from "@/Components/TextInput.vue";
 import InputError from "@/Components/InputError.vue";
 import SortableColumn from "@/Components/SortableColumn.vue";
 import SearchFilter from "@/Components/SearchFilter.vue";
+import axios from "axios";
 
 // Modifiez la prop pour accepter les objets complets
 const props = defineProps({
@@ -83,12 +84,24 @@ const submitForm = () => {
   if (isEditing.value) {
     form.put(route("classes.update", form.oldName), {
       onSuccess: () => closeModal(),
-      onError: () => console.error("Erreur de soumission"),
+      onError: (errors) => {
+        axios.post("/api/log", {
+          message: "Erreur lors de la modification de la classe",
+          data: { errors, className: form.oldName },
+          level: "error",
+        });
+      },
     });
   } else {
     form.post(route("classes.store"), {
       onSuccess: () => closeModal(),
-      onError: () => console.error("Erreur de soumission"),
+      onError: (errors) => {
+        axios.post("/api/log", {
+          message: "Erreur lors de la création de la classe",
+          data: { errors, className: form.name },
+          level: "error",
+        });
+      },
     });
   }
 };

@@ -27,9 +27,6 @@ const props = defineProps({
   },
 });
 
-// Ajout de logs pour vérifier les données
-console.log("Tokens reçus:", props.tokens);
-
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -42,7 +39,10 @@ const formatDate = (date) => {
 
 // Statistiques plus détaillées
 const totalResponses = computed(() => {
-  console.log("Total tokens:", props.tokens.length);
+  axios.post("/api/log", {
+    message: "Statistiques évaluations",
+    data: { total_tokens: props.tokens.length },
+  });
   return props.tokens.length;
 });
 
@@ -50,22 +50,20 @@ const completedResponses = computed(() => {
   const completed = props.tokens.filter(
     (token) => token.used_at !== null
   ).length;
-  console.log("Réponses complétées:", completed);
+  axios.post("/api/log", {
+    message: "Réponses complétées",
+    data: { completed },
+  });
   return completed;
 });
 
 const pendingResponses = computed(() => {
   const pending = props.tokens.filter((token) => token.used_at === null).length;
-  console.log("Réponses en attente:", pending);
   return pending;
 });
 
 // Ajout de logs plus détaillés
 const tokensWithAnswers = computed(() => {
-  console.log(
-    "Tokens avec réponses:",
-    props.tokens.filter((t) => t.answers)
-  );
   return props.tokens.filter((t) => t.answers);
 });
 
@@ -94,10 +92,9 @@ const downloadExcel = async () => {
         class: props.classGroup.id,
         date: props.date,
       }),
-      { responseType: "blob" } // Important pour les fichiers
+      { responseType: "blob" }
     );
 
-    // Créer un lien temporaire pour le téléchargement
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement("a");
     link.href = url;
@@ -110,8 +107,11 @@ const downloadExcel = async () => {
     link.remove();
     window.URL.revokeObjectURL(url);
   } catch (error) {
-    console.error("Erreur lors du téléchargement:", error);
-    alert("Une erreur est survenue lors du téléchargement du fichier Excel");
+    axios.post("/api/log", {
+      message: "Erreur lors du téléchargement Excel",
+      data: { error: error.message },
+      level: "error",
+    });
   }
 };
 </script>

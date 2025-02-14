@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { useForm, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import { Link } from "@inertiajs/vue3";
+import axios from "axios";
 
 const props = defineProps({
   modules: {
@@ -63,19 +64,18 @@ const loadGroups = async () => {
       students.value = data.students;
     }
   } catch (error) {
-    console.error("Erreur lors du chargement des groupes:", error);
+    axios.post("/api/log", {
+      message: "Erreur lors du chargement des groupes",
+      data: {
+        error: error.message,
+        moduleId: selectedModule.value,
+      },
+      level: "error",
+    });
     groups.value = [];
     students.value = [];
-    // Optionnel : Afficher un message d'erreur à l'utilisateur
-    alert("Erreur lors du chargement des groupes. Veuillez réessayer.");
   }
 };
-
-// Filtrer les étudiants par groupe sélectionné
-const filteredStudents = computed(() => {
-  if (!selectedGroup.value || !students.value[selectedGroup.value]) return [];
-  return students.value[selectedGroup.value];
-});
 
 // Envoyer les invitations
 const sendInvitations = () => {
@@ -96,11 +96,22 @@ const sendInvitations = () => {
       students.value = [];
     },
     onError: (errors) => {
-      console.error("Erreurs:", errors);
-      alert("Une erreur est survenue lors de l'envoi des invitations.");
+      axios.post("/api/log", {
+        message: "Erreur lors de l'envoi des invitations",
+        data: { errors },
+        level: "error",
+      });
     },
   });
 };
+
+// Filtrer les étudiants par groupe sélectionné
+const filteredStudents = computed(() => {
+  if (!selectedGroup.value || !students.value[selectedGroup.value]) {
+    return [];
+  }
+  return students.value[selectedGroup.value];
+});
 
 // Formater la date pour l'affichage
 const formatDate = (date) => {
@@ -141,6 +152,14 @@ const groupedTokens = computed(() => {
 
   return Object.values(grouped);
 });
+
+const handleError = (error, context) => {
+  axios.post("/api/log", {
+    message: `Erreur dans la gestion des évaluations: ${context}`,
+    data: { error: error.message },
+    level: "error",
+  });
+};
 </script>
 
 <template>
