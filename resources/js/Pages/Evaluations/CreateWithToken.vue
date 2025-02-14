@@ -358,10 +358,6 @@ onMounted(() => {
         <div v-else class="text-red-600">
           Le formulaire d'évaluation n'est pas disponible.
         </div>
-
-        <pre class="mt-4 p-4 bg-gray-100 rounded">
-          {{ props.form }}
-        </pre>
       </div>
     </div>
   </PublicLayout>
