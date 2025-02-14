@@ -6,6 +6,7 @@ import InputLabel from "@/Components/InputLabel.vue";
 import InputError from "@/Components/InputError.vue";
 import PrimaryButton from "@/Components/PrimaryButton.vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
+import axios from "axios";
 
 const props = defineProps({
   token: String,
@@ -151,10 +152,17 @@ const submit = () => {
   form.post(route("evaluations.store-with-token", props.token), {
     onSuccess: () => {
       // Redirection gérée par le contrôleur
-      console.log("Formulaire soumis avec succès");
+      axios.post("/api/log", {
+        message: "Formulaire d'évaluation soumis avec succès",
+        data: { token: props.token },
+      });
     },
     onError: (errors) => {
-      console.error("Erreurs lors de la soumission:", errors);
+      axios.post("/api/log", {
+        message: "Erreur lors de la soumission du formulaire d'évaluation",
+        data: { errors, token: props.token },
+        level: "error",
+      });
     },
     preserveScroll: true,
   });
