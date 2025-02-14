@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Form extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'title',
         'description',
@@ -14,8 +17,11 @@ class Form extends Model
         'is_active'
     ];
 
+    protected $dates = ['deleted_at'];
+
     protected $casts = [
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
+        'deleted_at' => 'datetime'
     ];
 
     public function sections(): HasMany

@@ -87,9 +87,33 @@ const handleSort = (sortData) => {
   currentSort.value = sortData;
 };
 
+// Modifiez la fonction resetForm pour réinitialiser tous les champs
 const resetForm = () => {
   form.reset();
+  form.id = null;
+  form.last_name = "";
+  form.first_name = "";
+  form.email = "";
+  form.school_email = "";
+  form.telephone = "";
+  form.birth_date = "";
+  form.student_id = "";
+  form.class_ids = [];
+  form.academic_year = "";
+  form.status = "active";
   isEditing.value = false;
+};
+
+// Ajoutez une fonction pour gérer le clic sur "Ajouter un étudiant"
+const handleAddStudent = () => {
+  resetForm();
+  showCreateModal.value = true;
+};
+
+// Ajoutez une fonction pour gérer la fermeture du modal
+const handleCloseModal = () => {
+  showCreateModal.value = false;
+  resetForm();
 };
 
 const submitForm = () => {
@@ -193,7 +217,7 @@ watch(
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
           Gestion des étudiants
         </h2>
-        <PrimaryButton @click="showCreateModal = true">
+        <PrimaryButton @click="handleAddStudent">
           Ajouter un étudiant
         </PrimaryButton>
       </div>
@@ -286,7 +310,7 @@ watch(
     </div>
 
     <!-- Modal de création/édition -->
-    <Modal :show="showCreateModal" @close="showCreateModal = false">
+    <Modal :show="showCreateModal" @close="handleCloseModal">
       <div class="p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">
           {{ isEditing ? "Modifier l'étudiant" : "Ajouter un étudiant" }}
@@ -433,7 +457,7 @@ watch(
           </div>
 
           <div class="flex justify-end mt-6 space-x-2">
-            <SecondaryButton @click="showCreateModal = false">
+            <SecondaryButton @click="handleCloseModal">
               Annuler
             </SecondaryButton>
             <PrimaryButton type="submit" :disabled="form.processing">

@@ -48,6 +48,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     Route::put('/{form}', [FormController::class, 'update'])->name('forms.update');
     Route::delete('/{form}', [FormController::class, 'destroy'])->name('forms.destroy');
     Route::put('/{form}/toggle-active', [FormController::class, 'toggleActive'])->name('forms.toggle-active');
+    Route::put('/{form}/restore', [FormController::class, 'restore'])
+      ->name('forms.restore')
+      ->withTrashed(); // Permet d'accéder aux enregistrements soft deleted
   });
 
   // Routes du pédagogue

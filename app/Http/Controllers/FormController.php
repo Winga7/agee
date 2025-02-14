@@ -23,7 +23,9 @@ class FormController extends Controller
     try {
       $forms = Form::with(['sections.questions' => function ($query) {
         $query->orderBy('order');
-      }])->get();
+      }])
+        ->where('is_active', true)
+        ->get();
 
       Log::info('Chargement de la liste des formulaires', [
         'forms_count' => $forms->count()
@@ -208,19 +210,20 @@ class FormController extends Controller
   public function destroy(Form $form)
   {
     try {
-      $form->sections()->delete();
+      // Désactiver le formulaire
+      $form->update(['is_active' => false]);
+      // Utiliser delete() pour déclencher le soft delete
       $form->delete();
 
-      Log::info('Formulaire supprimé avec succès', ['form_id' => $form->id]);
+      Log::info('Formulaire archivé avec succès', ['form_id' => $form->id]);
       return redirect()->route('forms.index')
-        ->with('success', 'Le formulaire a été supprimé avec succès.');
+        ->with('success', 'Le formulaire a été archivé avec succès.');
     } catch (\Exception $e) {
-      Log::error('Erreur lors de la suppression du formulaire', [
+      Log::error('Erreur lors de l\'archivage du formulaire', [
         'error' => $e->getMessage(),
         'form_id' => $form->id
       ]);
-      return redirect()->route('forms.index')
-        ->with('error', 'Une erreur est survenue lors de la suppression du formulaire.');
+      return back()->with('error', 'Une erreur est survenue lors de l\'archivage du formulaire.');
     }
   }
 

@@ -37,27 +37,6 @@ class ModuleController extends Controller
   }
 
   /**
-   * Affiche le formulaire de création d'un module
-   *
-   * @return \Inertia\Response
-   */
-  public function create()
-  {
-    try {
-      Log::info('Accès au formulaire de création de module');
-
-      return Inertia::render('Modules/Create', [
-        'professors' => Professor::all(),
-      ]);
-    } catch (\Exception $e) {
-      Log::error('Erreur lors du chargement du formulaire de création', [
-        'error' => $e->getMessage()
-      ]);
-      return redirect()->back()->with('error', 'Erreur lors du chargement du formulaire');
-    }
-  }
-
-  /**
    * Enregistre un nouveau module
    *
    * @param Request $request
@@ -103,53 +82,6 @@ class ModuleController extends Controller
       return redirect()->back()
         ->with('error', 'Erreur lors de la création du module')
         ->withInput();
-    }
-  }
-
-  /**
-   * Affiche les détails d'un module
-   *
-   * @param Module $module
-   * @return \Inertia\Response
-   */
-  public function show(Module $module)
-  {
-    try {
-      Log::info('Affichage du module', ['module_id' => $module->id]);
-
-      return Inertia::render('Modules/Show', [
-        'module' => $module->load(['professor', 'classes', 'courseEnrollments.student'])
-      ]);
-    } catch (\Exception $e) {
-      Log::error('Erreur lors de l\'affichage du module', [
-        'error' => $e->getMessage(),
-        'module_id' => $module->id
-      ]);
-      return redirect()->back()->with('error', 'Erreur lors de l\'affichage du module');
-    }
-  }
-
-  /**
-   * Affiche le formulaire d'édition d'un module
-   *
-   * @param Module $module
-   * @return \Inertia\Response
-   */
-  public function edit(Module $module)
-  {
-    try {
-      Log::info('Accès au formulaire d\'édition', ['module_id' => $module->id]);
-
-      return Inertia::render('Modules/Edit', [
-        'module' => $module,
-        'professors' => Professor::all(),
-      ]);
-    } catch (\Exception $e) {
-      Log::error('Erreur lors du chargement du formulaire d\'édition', [
-        'error' => $e->getMessage(),
-        'module_id' => $module->id
-      ]);
-      return redirect()->back()->with('error', 'Erreur lors du chargement du formulaire');
     }
   }
 

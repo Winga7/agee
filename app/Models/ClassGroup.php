@@ -17,9 +17,9 @@ class ClassGroup extends Model
     'name'
   ];
 
-  public function students(): HasMany
+  public function students(): BelongsToMany
   {
-    return $this->hasMany(Student::class, 'class_id');
+    return $this->belongsToMany(Student::class, 'student_class', 'class_id', 'student_id');
   }
 
   public function courseEnrollments(): HasMany

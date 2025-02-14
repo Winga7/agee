@@ -11,17 +11,20 @@ import InputError from "@/Components/InputError.vue";
 import SortableColumn from "@/Components/SortableColumn.vue";
 import SearchFilter from "@/Components/SearchFilter.vue";
 
+// Props
 const props = defineProps({
   modules: Array,
   professors: Array,
   classGroups: Array,
 });
 
+// États réactifs
 const showCreateModal = ref(false);
 const isEditing = ref(false);
 const searchQuery = ref("");
 const currentSort = ref({ field: "title", direction: "asc" });
 
+// Formulaire
 const form = useForm({
   id: null,
   title: "",
@@ -72,6 +75,7 @@ const filteredAndSortedModules = computed(() => {
   return result;
 });
 
+// Computed properties
 const sortedClassGroups = computed(() => {
   return [...props.classGroups].sort((a, b) => a.name.localeCompare(b.name));
 });
@@ -84,11 +88,20 @@ const sortedProfessors = computed(() => {
   });
 });
 
+// Fonction pour réinitialiser le formulaire
 const resetForm = () => {
   form.reset();
+  form.clearErrors();
   isEditing.value = false;
 };
 
+// Ajoutez cette nouvelle fonction
+const handleModalClose = () => {
+  resetForm();
+  showCreateModal.value = false;
+};
+
+// Fonction pour éditer un module
 const editModule = (module) => {
   isEditing.value = true;
   form.id = module.id;
@@ -100,6 +113,7 @@ const editModule = (module) => {
   showCreateModal.value = true;
 };
 
+// Fonction pour soumettre le formulaire
 const submitForm = () => {
   if (isEditing.value) {
     form.put(route("modules.update", form.id), {
@@ -118,12 +132,14 @@ const submitForm = () => {
   }
 };
 
+// Fonction pour confirmer la suppression
 const confirmDelete = (module) => {
   if (confirm("Êtes-vous sûr de vouloir supprimer ce module ?")) {
     form.delete(route("modules.destroy", module.id));
   }
 };
 
+// Fonction pour gérer le tri
 const handleSort = (sortData) => {
   currentSort.value = sortData;
 };
@@ -227,7 +243,7 @@ const handleSort = (sortData) => {
     </div>
 
     <!-- Modal de création/édition -->
-    <Modal :show="showCreateModal" @close="showCreateModal = false">
+    <Modal :show="showCreateModal" @close="handleModalClose">
       <div class="p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">
           {{ isEditing ? "Modifier le module" : "Créer un module" }}
@@ -309,7 +325,7 @@ const handleSort = (sortData) => {
           </div>
 
           <div class="flex justify-end mt-6 space-x-2">
-            <SecondaryButton @click="showCreateModal = false">
+            <SecondaryButton @click="handleModalClose">
               Annuler
             </SecondaryButton>
             <PrimaryButton type="submit" :disabled="form.processing">

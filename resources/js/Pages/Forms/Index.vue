@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useForm } from "@inertiajs/vue3";
+// Imports des composants
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Modal from "@/Components/Modal.vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
@@ -12,6 +13,7 @@ import InputError from "@/Components/InputError.vue";
 import FormPreview from "@/Components/FormPreview.vue";
 import axios from "axios";
 
+// Props definition
 const props = defineProps({
   forms: {
     type: Array,
@@ -19,13 +21,18 @@ const props = defineProps({
   },
 });
 
-// État du formulaire
+// ====================================
+// État global du formulaire
+// ====================================
 const showCreateModal = ref(false);
 const isEditing = ref(false);
 const currentSection = ref(0);
 const showPreviewModal = ref(false);
 const selectedForm = ref(null);
 
+// ====================================
+// Initialisation du formulaire
+// ====================================
 const form = useForm({
   id: null,
   title: "",
@@ -37,24 +44,16 @@ const form = useForm({
       order: 0,
       depends_on_question_id: null,
       depends_on_answer: null,
-      questions: [
-        {
-          id: Date.now(),
-          question: "",
-          type: "text",
-          options: [],
-          order: 0,
-          is_required: true,
-          controls_visibility: false,
-        },
-      ],
+      questions: [],
     },
   ],
 });
 
+// ====================================
+// Fonctions utilitaires
+// ====================================
 const resetForm = () => {
   form.reset();
-  // Réinitialiser avec une seule section vide
   form.sections = [
     {
       title: "",
@@ -77,7 +76,9 @@ const handleError = (error) => {
   });
 };
 
-// Méthodes pour la gestion des sections
+// ====================================
+// Gestion des sections
+// ====================================
 const addSection = () => {
   form.sections.push({
     title: "",
@@ -96,7 +97,9 @@ const removeSection = (index) => {
   });
 };
 
-// Méthodes pour la gestion des questions
+// ====================================
+// Gestion des questions
+// ====================================
 const addQuestion = (sectionIndex) => {
   form.sections[sectionIndex].questions.push({
     id: Date.now(),
@@ -105,7 +108,7 @@ const addQuestion = (sectionIndex) => {
     options: [],
     order: form.sections[sectionIndex].questions.length,
     is_required: true,
-    controls_visibility: false, // Initialisation explicite
+    controls_visibility: false,
   });
 };
 
@@ -116,7 +119,9 @@ const removeQuestion = (sectionIndex, questionIndex) => {
   });
 };
 
-// Gestion des options pour les questions radio/select
+// ====================================
+// Gestion des options
+// ====================================
 const addOption = (sectionIndex, questionIndex) => {
   if (!form.sections[sectionIndex].questions[questionIndex].options) {
     form.sections[sectionIndex].questions[questionIndex].options = [];
@@ -131,7 +136,9 @@ const removeOption = (sectionIndex, questionIndex, optionIndex) => {
   );
 };
 
-// Soumission du formulaire
+// ====================================
+// Opérations CRUD
+// ====================================
 const submitForm = () => {
   const formData = {
     ...form,
@@ -148,32 +155,23 @@ const submitForm = () => {
     })),
   };
 
+  const config = {
+    ...formData,
+    onSuccess: () => {
+      resetForm();
+      showCreateModal.value = false;
+      window.location.reload();
+    },
+    onError: (errors) => {
+      handleError(errors);
+    },
+    preserveScroll: true,
+  };
+
   if (isEditing.value) {
-    form.put(route("forms.update", form.id), {
-      ...formData,
-      onSuccess: () => {
-        resetForm();
-        showCreateModal.value = false;
-        window.location.reload();
-      },
-      onError: (errors) => {
-        handleError(errors);
-      },
-      preserveScroll: true,
-    });
+    form.put(route("forms.update", form.id), config);
   } else {
-    form.post(route("forms.store"), {
-      ...formData,
-      onSuccess: () => {
-        resetForm();
-        showCreateModal.value = false;
-        window.location.reload();
-      },
-      onError: (errors) => {
-        handleError(errors);
-      },
-      preserveScroll: true,
-    });
+    form.post(route("forms.store"), config);
   }
 };
 
@@ -226,22 +224,28 @@ const editForm = (formToEdit) => {
 };
 
 const confirmDelete = (formToDelete) => {
-  if (confirm("Êtes-vous sûr de vouloir supprimer ce formulaire ?")) {
+  if (
+    confirm(
+      "Êtes-vous sûr de vouloir archiver ce formulaire ? Il ne sera plus accessible pour de nouvelles évaluations mais les données existantes seront conservées."
+    )
+  ) {
     const deleteForm = useForm({});
     deleteForm.delete(route("forms.destroy", formToDelete.id), {
       onSuccess: () => {
-        // Le formulaire sera automatiquement retiré de la liste grâce à Inertia
+        // Le formulaire sera automatiquement masqué grâce à Inertia
       },
       onError: () => {
-        handleError(new Error("Erreur lors de la suppression du formulaire"));
+        handleError(new Error("Erreur lors de l'archivage du formulaire"));
       },
     });
   }
 };
 
+// ====================================
+// Gestion de la prévisualisation
+// ====================================
 const showPreview = (formToPreview) => {
   selectedForm.value = JSON.parse(JSON.stringify(formToPreview));
-
   showPreviewModal.value = true;
 };
 
@@ -332,7 +336,7 @@ const closePreview = () => {
 
                   <button
                     @click="confirmDelete(form)"
-                    class="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                   >
                     <svg
                       class="w-4 h-4 mr-1"
@@ -344,10 +348,10 @@ const closePreview = () => {
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-14 0l2-2m10 0l-2-2"
                       />
                     </svg>
-                    Supprimer
+                    Archiver
                   </button>
 
                   <button

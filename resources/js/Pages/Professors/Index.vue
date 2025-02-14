@@ -12,10 +12,12 @@ import SortableColumn from "@/Components/SortableColumn.vue";
 import SearchFilter from "@/Components/SearchFilter.vue";
 import ProfessorDetailsModal from "@/Components/ProfessorDetailsModal.vue";
 
+// Propriétés reçues du contrôleur Laravel
 const props = defineProps({
   professors: Array,
 });
 
+// États réactifs
 const showCreateModal = ref(false);
 const isEditing = ref(false);
 const searchQuery = ref("");
@@ -23,6 +25,7 @@ const currentSort = ref({ field: "last_name", direction: "asc" });
 const showDetailsModal = ref(false);
 const selectedProfessor = ref(null);
 
+// Définition du formulaire avec useForm d'Inertia
 const form = useForm({
   id: null,
   first_name: "",
@@ -34,6 +37,7 @@ const form = useForm({
   birth_date: "",
 });
 
+// Propriété calculée pour filtrer et trier les professeurs
 const filteredAndSortedProfessors = computed(() => {
   let result = [...props.professors];
 
@@ -60,11 +64,14 @@ const filteredAndSortedProfessors = computed(() => {
   return result;
 });
 
+// Réinitialisation du formulaire
 const resetForm = () => {
   form.reset();
+  form.clearErrors();
   isEditing.value = false;
 };
 
+// Fonction pour éditer un professeur
 const editProfessor = (professor) => {
   isEditing.value = true;
   form.id = professor.id;
@@ -78,6 +85,7 @@ const editProfessor = (professor) => {
   showCreateModal.value = true;
 };
 
+// Fonction pour soumettre le formulaire (création/modification)
 const submitForm = () => {
   if (isEditing.value) {
     form.put(route("professors.update", form.id), {
@@ -96,19 +104,28 @@ const submitForm = () => {
   }
 };
 
+// Fonction pour confirmer la suppression d'un professeur
 const confirmDelete = (professor) => {
   if (confirm("Êtes-vous sûr de vouloir supprimer ce professeur ?")) {
     form.delete(route("professors.destroy", professor.id));
   }
 };
 
+// Fonction pour gérer le tri des professeurs
 const handleSort = (sortData) => {
   currentSort.value = sortData;
 };
 
+// Fonction pour afficher les détails d'un professeur
 const viewDetails = (professor) => {
   selectedProfessor.value = professor;
   showDetailsModal.value = true;
+};
+
+// Ajoutez cette nouvelle fonction
+const handleModalClose = () => {
+  resetForm();
+  showCreateModal.value = false;
 };
 </script>
 
@@ -218,7 +235,7 @@ const viewDetails = (professor) => {
     </div>
 
     <!-- Modal de création/édition -->
-    <Modal :show="showCreateModal" @close="showCreateModal = false">
+    <Modal :show="showCreateModal" @close="handleModalClose">
       <div class="p-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">
           {{ isEditing ? "Modifier le professeur" : "Ajouter un professeur" }}
@@ -308,7 +325,7 @@ const viewDetails = (professor) => {
           </div>
 
           <div class="flex justify-end mt-6 space-x-2">
-            <SecondaryButton @click="showCreateModal = false">
+            <SecondaryButton @click="handleModalClose">
               Annuler
             </SecondaryButton>
             <PrimaryButton type="submit" :disabled="form.processing">

@@ -24,6 +24,7 @@ return new class extends Migration
 
       // Données d'évaluation
       $table->json('answers')->nullable();
+      $table->integer('score')->nullable();
       $table->enum('status', ['pending', 'completed'])->default('pending');
 
 
