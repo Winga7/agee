@@ -14,6 +14,21 @@ use Faker\Factory as Faker;
 
 class DatabaseSeeder extends Seeder
 {
+  // Fonction helper pour générer un numéro de téléphone belge
+  private function generateBelgianPhoneNumber($faker)
+  {
+    $formats = [
+      // Mobiles (commençant par 04)
+      '04## ## ## ##',
+      '+324## ## ## ##',
+      // Fixes (commençant par 02, 03, 04, etc.)
+      '0#{1} ### ## ##',
+      '+32#{1} ### ## ##'
+    ];
+
+    return $faker->numerify($faker->randomElement($formats));
+  }
+
   public function run(): void
   {
     $faker = Faker::create('be_BE');
@@ -70,31 +85,20 @@ class DatabaseSeeder extends Seeder
       ]);
     }
 
-    // Création de 20 classes
+    // Création des classes
     $classes = [];
     $specialities = ['Web Dev', 'Design', 'Marketing', 'Comptabilité', 'Informatique'];
     $years = ['1ère', '2ème', '3ème'];
 
-    // Modification de la création des classes
-    $usedCombinations = [];
-    for ($i = 0; $i < 20; $i++) {
-      do {
-        $speciality = $faker->randomElement($specialities);
-        $year = $faker->randomElement($years);
+    foreach ($specialities as $speciality) {
+      foreach ($years as $year) {
         $className = "$speciality $year année";
-      } while (in_array($className, $usedCombinations) && count($usedCombinations) < count($specialities) * count($years));
-
-      // Si toutes les combinaisons possibles sont utilisées, arrêtez la création
-      if (count($usedCombinations) >= count($specialities) * count($years)) {
-        break;
+        $classes[] = DB::table('class_groups')->insertGetId([
+          'name' => $className,
+          'created_at' => now(),
+          'updated_at' => now()
+        ]);
       }
-
-      $usedCombinations[] = $className;
-      $classes[] = DB::table('class_groups')->insertGetId([
-        'name' => $className,
-        'created_at' => now(),
-        'updated_at' => now()
-      ]);
     }
 
     // Création de modules avec des noms cohérents
@@ -147,13 +151,11 @@ class DatabaseSeeder extends Seeder
       $module->classes()->attach($moduleClasses);
     }
 
-    // Création de 20 étudiants
-    $students = [];
+    // Création des étudiants avec classes multiples
     for ($i = 0; $i < 20; $i++) {
       $firstName = $faker->firstName;
       $lastName = $faker->lastName;
 
-      // Création de l'email principal (première lettre du prénom + nom)
       $mainEmail = strtolower(
         preg_replace(
           '/[^a-zA-Z]/',
@@ -166,7 +168,6 @@ class DatabaseSeeder extends Seeder
         )
       ) . '@gmail.com';
 
-      // Création de l'email scolaire (prénom.nom@ifosup.wavre.be)
       $schoolEmail = strtolower(
         preg_replace(
           '/[^a-zA-Z]/',
@@ -179,32 +180,43 @@ class DatabaseSeeder extends Seeder
         )
       ) . '@ifosup.wavre.be';
 
-      $students[] = Student::create([
+      $student = Student::create([
         'first_name' => $firstName,
         'last_name' => $lastName,
         'email' => $mainEmail,
         'school_email' => $schoolEmail,
-        'telephone' => $faker->phoneNumber,
+        'telephone' => $this->generateBelgianPhoneNumber($faker),
         'birth_date' => $faker->dateTimeBetween('-30 years', '-18 years')->format('Y-m-d'),
         'student_id' => 'STU' . str_pad($i + 1, 3, '0', STR_PAD_LEFT),
-        'academic_year' => '2023-2024',
-        'class_id' => $faker->randomElement($classes)
+        'academic_year' => '2024-2025',
+        'status' => 'active'
       ]);
-    }
 
-    // Création des inscriptions aux cours (plusieurs cours par étudiant)
-    foreach ($students as $student) {
-      $moduleCount = rand(2, 5);
-      $studentModules = $faker->randomElements($modules, $moduleCount);
+      // Attribuer 1 à 3 classes aléatoires à chaque étudiant
+      $studentClasses = $faker->randomElements($classes, $faker->numberBetween(1, 3));
+      $student->classes()->attach($studentClasses);
 
-      foreach ($studentModules as $module) {
-        CourseEnrollment::create([
-          'student_id' => $student->id,
-          'module_id' => $module->id,
-          'class_id' => $student->class_id,
-          'start_date' => '2023-09-01',
-          'end_date' => '2024-06-30',
-        ]);
+      // Pour chaque classe de l'étudiant, créer des inscriptions aux modules
+      foreach ($studentClasses as $classId) {
+        // Sélectionner 2-4 modules aléatoires pour cette classe
+        $classModules = $faker->randomElements(
+          Module::whereHas('classes', function ($query) use ($classId) {
+            $query->where('class_groups.id', $classId);
+          })->get()->toArray(),
+          min($faker->numberBetween(2, 3), Module::whereHas('classes', function ($query) use ($classId) {
+            $query->where('class_groups.id', $classId);
+          })->count())
+        );
+
+        foreach ($classModules as $module) {
+          CourseEnrollment::create([
+            'student_id' => $student->id,
+            'module_id' => $module['id'],
+            'class_id' => $classId,
+            'start_date' => '2024-09-01',
+            'end_date' => '2025-06-30',
+          ]);
+        }
       }
     }
   }

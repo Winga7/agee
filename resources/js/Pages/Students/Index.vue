@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from "vue";
-import { useForm } from "@inertiajs/vue3";
+import { ref, computed, watch } from "vue";
+import { useForm, router } from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 import Modal from "@/Components/Modal.vue";
 import SecondaryButton from "@/Components/SecondaryButton.vue";
@@ -40,7 +40,7 @@ const form = useForm({
   telephone: "",
   birth_date: "",
   student_id: "",
-  class_id: "",
+  class_ids: [],
   academic_year: "",
   status: "active",
 });
@@ -112,17 +112,16 @@ const submitForm = () => {
 
 const editStudent = (student) => {
   form.id = student.id;
-  form.first_name = student.first_name;
   form.last_name = student.last_name;
+  form.first_name = student.first_name;
   form.email = student.email;
-  form.school_email = student.school_email || "";
-  form.telephone = student.telephone || "";
+  form.school_email = student.school_email;
+  form.telephone = student.telephone;
   form.birth_date = student.birth_date;
   form.student_id = student.student_number;
-  form.class_id = student.class?.id || "";
+  form.class_ids = student.classes.map((c) => c.id);
   form.academic_year = student.academic_year;
   form.status = student.status;
-
   isEditing.value = true;
   showCreateModal.value = true;
 };
@@ -154,6 +153,37 @@ const viewDetails = (student) => {
   selectedStudent.value = student;
   showDetailsModal.value = true;
 };
+
+const refreshStudentDetails = async () => {
+  // Recharge les données
+  await router.reload({ only: ["students"] });
+
+  // Met à jour selectedStudent avec les nouvelles données
+  if (selectedStudent.value) {
+    const updatedStudent = props.students.find(
+      (s) => s.id === selectedStudent.value.id
+    );
+    if (updatedStudent) {
+      selectedStudent.value = updatedStudent;
+    }
+  }
+};
+
+// Surveille les changements dans props.students
+watch(
+  () => props.students,
+  (newStudents) => {
+    if (selectedStudent.value) {
+      const updatedStudent = newStudents.find(
+        (s) => s.id === selectedStudent.value.id
+      );
+      if (updatedStudent) {
+        selectedStudent.value = updatedStudent;
+      }
+    }
+  },
+  { deep: true }
+);
 </script>
 
 <template>
@@ -263,130 +293,142 @@ const viewDetails = (student) => {
         </h3>
 
         <form @submit.prevent="submitForm">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <InputLabel for="last_name" value="Nom" />
-              <TextInput
-                id="last_name"
-                v-model="form.last_name"
-                type="text"
-                class="mt-1 block w-full"
-                required
-              />
-              <InputError :message="form.errors.last_name" class="mt-2" />
+          <div class="grid grid-cols-2 gap-6">
+            <!-- Colonne gauche -->
+            <div class="space-y-4">
+              <div>
+                <InputLabel for="last_name" value="Nom" />
+                <TextInput
+                  id="last_name"
+                  v-model="form.last_name"
+                  type="text"
+                  class="mt-1 block w-full"
+                  required
+                />
+                <InputError :message="form.errors.last_name" class="mt-2" />
+              </div>
+
+              <div>
+                <InputLabel for="first_name" value="Prénom" />
+                <TextInput
+                  id="first_name"
+                  v-model="form.first_name"
+                  type="text"
+                  class="mt-1 block w-full"
+                  required
+                />
+                <InputError :message="form.errors.first_name" class="mt-2" />
+              </div>
+
+              <div>
+                <InputLabel for="email" value="Email" />
+                <TextInput
+                  id="email"
+                  v-model="form.email"
+                  type="email"
+                  class="mt-1 block w-full"
+                  required
+                />
+                <InputError :message="form.errors.email" class="mt-2" />
+              </div>
+
+              <div>
+                <InputLabel for="schoolemail" value="School-Email" />
+                <TextInput
+                  id="schoolemail"
+                  v-model="form.school_email"
+                  type="email"
+                  class="mt-1 block w-full"
+                />
+                <InputError :message="form.errors.school_email" class="mt-2" />
+              </div>
+
+              <div>
+                <InputLabel for="telephone" value="Téléphone" />
+                <TextInput
+                  id="telephone"
+                  v-model="form.telephone"
+                  type="text"
+                  class="mt-1 block w-full"
+                />
+                <InputError :message="form.errors.telephone" class="mt-2" />
+              </div>
             </div>
 
-            <div>
-              <InputLabel for="first_name" value="Prénom" />
-              <TextInput
-                id="first_name"
-                v-model="form.first_name"
-                type="text"
-                class="mt-1 block w-full"
-                required
-              />
-              <InputError :message="form.errors.first_name" class="mt-2" />
-            </div>
+            <!-- Colonne droite -->
+            <div class="space-y-4">
+              <div>
+                <InputLabel for="birth_date" value="Date de naissance" />
+                <TextInput
+                  id="birth_date"
+                  v-model="form.birth_date"
+                  type="date"
+                  class="mt-1 block w-full"
+                  required
+                />
+                <InputError :message="form.errors.birth_date" class="mt-2" />
+              </div>
 
-            <div>
-              <InputLabel for="email" value="Email" />
-              <TextInput
-                id="email"
-                v-model="form.email"
-                type="email"
-                class="mt-1 block w-full"
-                required
-              />
-              <InputError :message="form.errors.email" class="mt-2" />
-            </div>
+              <div>
+                <InputLabel for="student_id" value="Numéro étudiant" />
+                <TextInput
+                  id="student_id"
+                  v-model="form.student_id"
+                  type="text"
+                  class="mt-1 block w-full"
+                  required
+                />
+                <InputError :message="form.errors.student_id" class="mt-2" />
+              </div>
 
-            <div>
-              <InputLabel for="schoolemail" value="School-Email" />
-              <TextInput
-                id="schoolemail"
-                v-model="form.school_email"
-                type="email"
-                class="mt-1 block w-full"
-              />
-              <InputError :message="form.errors.school_email" class="mt-2" />
-            </div>
+              <div>
+                <InputLabel for="academic_year" value="Année scolaire" />
+                <TextInput
+                  id="academic_year"
+                  v-model="form.academic_year"
+                  type="text"
+                  class="mt-1 block w-full"
+                  required
+                />
+                <InputError :message="form.errors.academic_year" class="mt-2" />
+              </div>
 
-            <div>
-              <InputLabel for="telephone" value="Téléphone" />
-              <TextInput
-                id="telephone"
-                v-model="form.telephone"
-                type="text"
-                class="mt-1 block w-full"
-              />
-              <InputError :message="form.errors.telephone" class="mt-2" />
-            </div>
-
-            <div>
-              <InputLabel for="birth_date" value="Date de naissance" />
-              <TextInput
-                id="birth_date"
-                v-model="form.birth_date"
-                type="date"
-                class="mt-1 block w-full"
-                required
-              />
-              <InputError :message="form.errors.birth_date" class="mt-2" />
-            </div>
-
-            <div>
-              <InputLabel for="student_id" value="Numéro étudiant" />
-              <TextInput
-                id="student_id"
-                v-model="form.student_id"
-                type="text"
-                class="mt-1 block w-full"
-                required
-              />
-              <InputError :message="form.errors.student_id" class="mt-2" />
-            </div>
-
-            <div>
-              <InputLabel for="class_id" value="Classe" />
-              <select
-                v-model="form.class_id"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-              >
-                <option value="">Sélectionner une classe</option>
-                <option
-                  v-for="classe in classes"
-                  :key="classe.id"
-                  :value="classe.id"
+              <div>
+                <InputLabel for="status" value="Statut" />
+                <select
+                  v-model="form.status"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                 >
-                  {{ classe.name }}
-                </option>
-              </select>
-              <InputError :message="form.errors.class_id" class="mt-2" />
-            </div>
+                  <option value="active">Actif</option>
+                  <option value="inactive">Inactif</option>
+                  <option value="graduated">Diplômé</option>
+                </select>
+                <InputError :message="form.errors.status" class="mt-2" />
+              </div>
 
-            <div>
-              <InputLabel for="academic_year" value="Année scolaire" />
-              <TextInput
-                id="academic_year"
-                v-model="form.academic_year"
-                type="text"
-                class="mt-1 block w-full"
-                required
-              />
-              <InputError :message="form.errors.academic_year" class="mt-2" />
-            </div>
-
-            <div>
-              <InputLabel for="status" value="Statut" />
-              <select
-                v-model="form.status"
-                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-              >
-                <option value="active">Actif</option>
-                <option value="inactive">Inactif</option>
-                <option value="graduated">Diplômé</option>
-              </select>
-              <InputError :message="form.errors.status" class="mt-2" />
+              <div>
+                <InputLabel for="classes" value="Classes" />
+                <select
+                  id="classes"
+                  v-model="form.class_ids"
+                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                  multiple
+                  required
+                >
+                  <option
+                    v-for="class_group in classes"
+                    :key="class_group.id"
+                    :value="class_group.id"
+                  >
+                    {{ class_group.name }}
+                  </option>
+                </select>
+                <p class="mt-1 text-sm text-gray-500 italic">
+                  Maintenez la touche CTRL (Windows) ou CMD (Mac) pour
+                  sélectionner plusieurs classes
+                </p>
+                <InputError :message="form.errors.class_ids" class="mt-2" />
+              </div>
             </div>
           </div>
 
@@ -441,19 +483,20 @@ const viewDetails = (student) => {
             </div>
 
             <div>
-              <InputLabel value="Groupe de classe" />
+              <InputLabel for="class_id" value="Classe" />
               <select
+                id="class_id"
                 v-model="enrollmentForm.class_id"
                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
                 required
               >
-                <option value="">Sélectionner un groupe</option>
+                <option value="">Sélectionner une classe</option>
                 <option
-                  v-for="classGroup in classes"
-                  :key="classGroup.id"
-                  :value="classGroup.id"
+                  v-for="class_group in selectedStudent?.classes"
+                  :key="class_group.id"
+                  :value="class_group.id"
                 >
-                  {{ classGroup.name }}
+                  {{ class_group.name }}
                 </option>
               </select>
               <InputError
@@ -511,7 +554,9 @@ const viewDetails = (student) => {
     <StudentDetailsModal
       :show="showDetailsModal"
       :student="selectedStudent"
+      :modules="modules"
       @close="showDetailsModal = false"
+      @refresh="refreshStudentDetails"
     />
   </AppLayout>
 </template>

@@ -63,6 +63,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
   // Inscriptions aux cours
   Route::post('/students/enroll', [StudentController::class, 'enroll'])->name('students.enroll');
   Route::post('/enrollments', [CourseEnrollmentController::class, 'store'])->name('enrollments.store');
+  Route::delete('/course-enrollments/{enrollment}', [CourseEnrollmentController::class, 'destroy'])->name('course-enrollments.destroy');
 });
 
 // Routes publiques des évaluations

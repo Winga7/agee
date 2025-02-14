@@ -68,6 +68,63 @@ class CourseEnrollmentController extends Controller
   }
 
   /**
+   * Met à jour une inscription existante
+   *
+   * @param Request $request
+   * @param CourseEnrollment $enrollment
+   * @return \Illuminate\Http\RedirectResponse
+   */
+  public function update(Request $request, CourseEnrollment $enrollment)
+  {
+    try {
+      DB::beginTransaction();
+
+      // Validation des données entrantes
+      $validated = $request->validate([
+        'module_id' => 'required|exists:modules,id',
+        'class_id' => 'required|exists:class_groups,id',
+        'start_date' => 'required|date',
+        'end_date' => 'required|date|after:start_date',
+      ]);
+
+      Log::info('Tentative de mise à jour d\'inscription', [
+        'enrollment_id' => $enrollment->id,
+        'student_id' => $enrollment->student_id,
+        'old_module_id' => $enrollment->module_id,
+        'new_module_id' => $validated['module_id']
+      ]);
+
+      // Mise à jour de l'inscription avec formatage des dates
+      $enrollment->update([
+        'module_id' => $validated['module_id'],
+        'class_id' => $validated['class_id'],
+        'start_date' => date('Y-m-d', strtotime($validated['start_date'])),
+        'end_date' => date('Y-m-d', strtotime($validated['end_date']))
+      ]);
+
+      DB::commit();
+
+      Log::info('Inscription mise à jour avec succès', [
+        'enrollment_id' => $enrollment->id,
+        'student_id' => $enrollment->student_id,
+        'module_id' => $enrollment->module_id
+      ]);
+
+      return redirect()->back()->with('success', 'Inscription mise à jour avec succès');
+    } catch (\Exception $e) {
+      DB::rollBack();
+
+      Log::error('Erreur lors de la mise à jour de l\'inscription', [
+        'error' => $e->getMessage(),
+        'enrollment_id' => $enrollment->id,
+        'student_id' => $enrollment->student_id
+      ]);
+
+      return redirect()->back()->with('error', 'Erreur lors de la mise à jour de l\'inscription');
+    }
+  }
+
+  /**
    * Supprime une inscription existante
    *
    * @param CourseEnrollment $enrollment

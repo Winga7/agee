@@ -19,7 +19,7 @@ class StudentController extends Controller
   public function index()
   {
     try {
-      $students = Student::with(['courseEnrollments.module', 'class'])
+      $students = Student::with(['courseEnrollments.module', 'classes'])
         ->get()
         ->map(function ($student) {
           return [
@@ -31,7 +31,7 @@ class StudentController extends Controller
             'telephone' => $student->telephone,
             'birth_date' => $student->birth_date,
             'student_number' => $student->student_id,
-            'class' => $student->class,
+            'classes' => $student->classes,
             'academic_year' => $student->academic_year,
             'status' => $student->status,
             'courseEnrollments' => $student->courseEnrollments
@@ -79,7 +79,8 @@ class StudentController extends Controller
         'telephone' => 'nullable|string',
         'birth_date' => 'required|date',
         'student_id' => 'required|string|unique:students',
-        'class_id' => 'required|exists:class_groups,id',
+        'class_ids' => 'required|array',
+        'class_ids.*' => 'exists:class_groups,id',
         'academic_year' => 'required|string',
         'status' => 'required|in:active,inactive,graduated'
       ]);
@@ -87,6 +88,7 @@ class StudentController extends Controller
       Log::info('Tentative de création d\'un étudiant', $validated);
 
       $student = Student::create($validated);
+      $student->classes()->attach($request->class_ids);
 
       DB::commit();
 
@@ -95,7 +97,7 @@ class StudentController extends Controller
         'name' => $student->first_name . ' ' . $student->last_name
       ]);
 
-      return redirect()->back()->with('success', 'L\'étudiant a été ajouté avec succès');
+      return redirect()->back()->with('success', 'Étudiant créé avec succès');
     } catch (\Exception $e) {
       DB::rollBack();
       Log::error('Erreur lors de la création de l\'étudiant', [
@@ -133,24 +135,28 @@ class StudentController extends Controller
       DB::beginTransaction();
 
       $validated = $request->validate([
-        'first_name' => 'required|string|max:100',
-        'last_name' => 'required|string|max:100',
+        'first_name' => 'required|string|max:255',
+        'last_name' => 'required|string|max:255',
         'email' => 'required|email|unique:students,email,' . $student->id,
         'school_email' => 'nullable|email|unique:students,school_email,' . $student->id,
         'telephone' => 'nullable|string',
         'birth_date' => 'required|date',
         'student_id' => 'required|string|unique:students,student_id,' . $student->id,
-        'class_id' => 'required|exists:class_groups,id',
+        'class_ids' => 'required|array',
+        'class_ids.*' => 'exists:class_groups,id',
         'academic_year' => 'required|string',
         'status' => 'required|in:active,inactive,graduated'
       ]);
 
-      Log::info('Tentative de mise à jour de l\'étudiant', [
+      Log::info('Tentative de mise à jour d\'un étudiant', [
         'student_id' => $student->id,
         'data' => $validated
       ]);
 
       $student->update($validated);
+
+      // Synchroniser les classes
+      $student->classes()->sync($request->class_ids);
 
       DB::commit();
 
@@ -164,12 +170,9 @@ class StudentController extends Controller
       DB::rollBack();
       Log::error('Erreur lors de la mise à jour de l\'étudiant', [
         'error' => $e->getMessage(),
-        'student_id' => $student->id,
-        'data' => $request->all()
+        'student_id' => $student->id
       ]);
-      return redirect()->back()
-        ->with('error', 'Erreur lors de la mise à jour de l\'étudiant')
-        ->withInput();
+      return redirect()->back()->with('error', 'Erreur lors de la mise à jour')->withInput();
     }
   }
 
