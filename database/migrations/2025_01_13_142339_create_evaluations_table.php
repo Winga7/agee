@@ -24,10 +24,6 @@ return new class extends Migration
 
       // Données d'évaluation
       $table->json('answers')->nullable();
-      $table->integer('score')->nullable();
-      $table->text('original_comment')->nullable();
-      $table->text('anonymized_comment')->nullable();
-      $table->boolean('is_anonymized')->default(false);
       $table->enum('status', ['pending', 'completed'])->default('pending');
 
 

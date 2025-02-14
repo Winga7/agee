@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
 {
   public function run(): void
   {
-    $faker = Faker::create('fr_FR');
+    $faker = Faker::create('be_BE');
 
     // Création du compte pédagogue
     User::create([
@@ -33,7 +33,20 @@ class DatabaseSeeder extends Seeder
       $firstName = $faker->firstName;
       $lastName = $faker->lastName;
 
-      // Nouvelle méthode pour créer l'email scolaire
+      // Création de l'email principal (première lettre du prénom + nom)
+      $mainEmail = strtolower(
+        preg_replace(
+          '/[^a-zA-Z]/',
+          '',
+          iconv(
+            'UTF-8',
+            'ASCII//TRANSLIT//IGNORE',
+            substr($firstName, 0, 1) . $lastName
+          )
+        )
+      ) . '@gmail.com';
+
+      // Création de l'email scolaire (prénom.nom@ifosup.wavre.be)
       $schoolEmail = strtolower(
         preg_replace(
           '/[^a-zA-Z]/',
@@ -41,7 +54,7 @@ class DatabaseSeeder extends Seeder
           iconv(
             'UTF-8',
             'ASCII//TRANSLIT//IGNORE',
-            substr($firstName, 0, 1) . '.' . $lastName
+            $firstName . '.' . $lastName
           )
         )
       ) . '@ifosup.wavre.be';
@@ -49,7 +62,7 @@ class DatabaseSeeder extends Seeder
       $professors[] = Professor::create([
         'first_name' => $firstName,
         'last_name' => $lastName,
-        'email' => $faker->email,
+        'email' => $mainEmail,
         'school_email' => $schoolEmail,
         'telephone' => $faker->phoneNumber,
         'adress' => $faker->address,
@@ -137,10 +150,41 @@ class DatabaseSeeder extends Seeder
     // Création de 20 étudiants
     $students = [];
     for ($i = 0; $i < 20; $i++) {
+      $firstName = $faker->firstName;
+      $lastName = $faker->lastName;
+
+      // Création de l'email principal (première lettre du prénom + nom)
+      $mainEmail = strtolower(
+        preg_replace(
+          '/[^a-zA-Z]/',
+          '',
+          iconv(
+            'UTF-8',
+            'ASCII//TRANSLIT//IGNORE',
+            substr($firstName, 0, 1) . $lastName
+          )
+        )
+      ) . '@gmail.com';
+
+      // Création de l'email scolaire (prénom.nom@ifosup.wavre.be)
+      $schoolEmail = strtolower(
+        preg_replace(
+          '/[^a-zA-Z]/',
+          '',
+          iconv(
+            'UTF-8',
+            'ASCII//TRANSLIT//IGNORE',
+            $firstName . '.' . $lastName
+          )
+        )
+      ) . '@ifosup.wavre.be';
+
       $students[] = Student::create([
-        'first_name' => $faker->firstName,
-        'last_name' => $faker->lastName,
-        'email' => $faker->email,
+        'first_name' => $firstName,
+        'last_name' => $lastName,
+        'email' => $mainEmail,
+        'school_email' => $schoolEmail,
+        'telephone' => $faker->phoneNumber,
         'birth_date' => $faker->dateTimeBetween('-30 years', '-18 years')->format('Y-m-d'),
         'student_id' => 'STU' . str_pad($i + 1, 3, '0', STR_PAD_LEFT),
         'academic_year' => '2023-2024',

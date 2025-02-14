@@ -15,7 +15,6 @@ return new class extends Migration
       $table->id();
       $table->foreignId('module_id')->constrained()->onDelete('cascade');
       $table->foreignId('class_group_id')->constrained('class_groups')->onDelete('cascade');
-      $table->timestamps();
 
       // Contrainte unique pour éviter les doublons
       $table->unique(['module_id', 'class_group_id']);
