@@ -16,9 +16,9 @@ class DashboardController extends Controller
         // Si nous sommes entre janvier et août, l'année académique a commencé l'année précédente
         $currentAcademicYear = (date('n') >= 1 && date('n') <= 8) ? $currentYear - 1 : $currentYear;
         $years = range($currentAcademicYear - 2, $currentAcademicYear + 1);
-        
+
         $stats = $this->getFilteredStats($request);
-        
+
         return Inertia::render('Dashboard', [
             'stats' => $stats,
             'modules' => Module::select('id', 'title')->get(),
@@ -48,7 +48,6 @@ class DashboardController extends Controller
             'totalModules' => $moduleId ? 1 : Module::whereHas('evaluations')->count(),
             'totalEvaluations' => $query->count(),
             'completedEvaluations' => (clone $query)->where('status', 'completed')->count(),
-            'averageScore' => round((clone $query)->where('status', 'completed')->avg('score'), 2) ?? 0,
             'participationRate' => $this->calculateParticipationRate($moduleId, $year)
         ];
     }
@@ -67,7 +66,7 @@ class DashboardController extends Controller
 
         $total = $query->count();
         if ($total === 0) return 0;
-        
+
         $completed = $query->whereNotNull('used_at')->count();
         return round(($completed / $total) * 100);
     }
@@ -78,7 +77,6 @@ class DashboardController extends Controller
             'totalModules' => Module::count(),
             'totalEvaluations' => Evaluation::count(),
             'completedEvaluations' => Evaluation::whereNotNull('created_at')->count(),
-            'averageScore' => round(Evaluation::avg('score'), 2) ?? 0,
             'participationRate' => $this->calculateParticipationRate()
         ];
     }

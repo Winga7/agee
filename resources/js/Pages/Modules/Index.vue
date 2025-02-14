@@ -72,6 +72,18 @@ const filteredAndSortedModules = computed(() => {
   return result;
 });
 
+const sortedClassGroups = computed(() => {
+  return [...props.classGroups].sort((a, b) => a.name.localeCompare(b.name));
+});
+
+const sortedProfessors = computed(() => {
+  return [...props.professors].sort((a, b) => {
+    const aName = `${a.last_name} ${a.first_name}`;
+    const bName = `${b.last_name} ${b.first_name}`;
+    return aName.localeCompare(bName);
+  });
+});
+
 const resetForm = () => {
   form.reset();
   isEditing.value = false;
@@ -255,7 +267,7 @@ const handleSort = (sortData) => {
               >
                 <option :value="null">-- Aucun --</option>
                 <option
-                  v-for="prof in professors"
+                  v-for="prof in sortedProfessors"
                   :key="prof.id"
                   :value="prof.id"
                 >
@@ -269,7 +281,7 @@ const handleSort = (sortData) => {
               <InputLabel value="Classes" />
               <div class="mt-2 space-y-2">
                 <label
-                  v-for="classGroup in classGroups"
+                  v-for="classGroup in sortedClassGroups"
                   :key="classGroup.id"
                   class="flex items-center"
                 >

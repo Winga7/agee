@@ -67,8 +67,8 @@ const handleSort = (sortData) => {
 
 const editClass = (group) => {
   isEditing.value = true;
-  form.name = group;
-  form.oldName = group;
+  form.name = group.name; // Utilisez group.name au lieu de group
+  form.oldName = group.name; // Utilisez group.name au lieu de group
   showCreateModal.value = true;
 };
 
