@@ -21,9 +21,6 @@ class DatabaseSeeder extends Seeder
       // Mobiles (commençant par 04)
       '04## ## ## ##',
       '+324## ## ## ##',
-      // Fixes (commençant par 02, 03, 04, etc.)
-      '0#{1} ### ## ##',
-      '+32#{1} ### ## ##'
     ];
 
     return $faker->numerify($faker->randomElement($formats));
@@ -37,7 +34,7 @@ class DatabaseSeeder extends Seeder
     User::create([
       'name' => 'Pédagogue',
       'firstname' => 'Test',
-      'email' => 'ped@example.com',
+      'email' => 'pedagogue@ifosup.wavre.be',
       'password' => bcrypt('password'),
       'role' => 'pedagogue',
     ]);
@@ -51,7 +48,7 @@ class DatabaseSeeder extends Seeder
       // Création de l'email principal (première lettre du prénom + nom)
       $mainEmail = strtolower(
         preg_replace(
-          '/[^a-zA-Z]/',
+          '/[^a-zA-Z._-]/',
           '',
           iconv(
             'UTF-8',
@@ -64,7 +61,7 @@ class DatabaseSeeder extends Seeder
       // Création de l'email scolaire (prénom.nom@ifosup.wavre.be)
       $schoolEmail = strtolower(
         preg_replace(
-          '/[^a-zA-Z]/',
+          '/[^a-zA-Z._-]/',
           '',
           iconv(
             'UTF-8',
@@ -79,7 +76,7 @@ class DatabaseSeeder extends Seeder
         'last_name' => $lastName,
         'email' => $mainEmail,
         'school_email' => $schoolEmail,
-        'telephone' => $faker->phoneNumber,
+        'telephone' => $this->generateBelgianPhoneNumber($faker),
         'adress' => $faker->address,
         'birth_date' => $faker->dateTimeBetween('-60 years', '-25 years')->format('Y-m-d'),
       ]);
@@ -87,7 +84,7 @@ class DatabaseSeeder extends Seeder
 
     // Création des classes
     $classes = [];
-    $specialities = ['Web Dev', 'Design', 'Marketing', 'Comptabilité', 'Informatique'];
+    $specialities = ['BES Webdeveloper', 'BES Webdesigner UI/UX', 'Bachelier en Informatique', 'Bachelier en Comptabilité', 'Bachelier en Marketing'];
     $years = ['1ère', '2ème', '3ème'];
 
     foreach ($specialities as $speciality) {
@@ -103,35 +100,34 @@ class DatabaseSeeder extends Seeder
 
     // Création de modules avec des noms cohérents
     $modulesList = [
-      // Web Dev
-      ['title' => 'HTML/CSS Fondamentaux', 'code' => 'WEB101'],
-      ['title' => 'JavaScript Avancé', 'code' => 'WEB202'],
-      ['title' => 'PHP & MySQL', 'code' => 'WEB303'],
-      ['title' => 'Framework Laravel', 'code' => 'WEB404'],
+      // BES Webdeveloper
+      ['title' => 'Scripts serveurs', 'code' => '5XSE2'],
+      ['title' => 'Scripts clients', 'code' => '5XSCL'],
 
-      // Design
-      ['title' => 'Design UI/UX', 'code' => 'DES101'],
-      ['title' => 'Adobe Photoshop', 'code' => 'DES202'],
-      ['title' => 'Adobe Illustrator', 'code' => 'DES303'],
-      ['title' => 'Motion Design', 'code' => 'DES404'],
 
-      // Marketing
-      ['title' => 'Marketing Digital', 'code' => 'MKT101'],
-      ['title' => 'Réseaux Sociaux', 'code' => 'MKT202'],
-      ['title' => 'SEO/SEA', 'code' => 'MKT303'],
-      ['title' => 'Analyse de Données', 'code' => 'MKT404'],
+      // BES Webdesigner UI/UX
+      ['title' => 'Création d\'applications web statiques', 'code' => '5XSTI'],
+      ['title' => 'CMS - Niveau 1', 'code' => '5XMS1'],
+      ['title' => 'Projet web dynamique', 'code' => '5XDY2'],
+      ['title' => 'Langue en situation appliquée à l\'enseignement supérieur UE2', 'code' => '5LAS2'],
 
-      // Comptabilité
-      ['title' => 'Comptabilité Générale', 'code' => 'CPT101'],
-      ['title' => 'Fiscalité', 'code' => 'CPT202'],
-      ['title' => 'Gestion Financière', 'code' => 'CPT303'],
-      ['title' => 'Audit Comptable', 'code' => 'CPT404'],
+      // Bachelier en Informatique
+      ['title' => 'Principes d\'algorithmique et de programmation', 'code' => '5IPAP'],
+      ['title' => 'Éléments de statistique', 'code' => '5IST4'],
+      ['title' => 'Structure des ordinateurs', 'code' => '5ISO4'],
+      ['title' => 'Systèmes d\'exploitation', 'code' => '5IOS4'],
 
-      // Informatique
-      ['title' => 'Systèmes d\'exploitation', 'code' => 'INF101'],
-      ['title' => 'Réseaux', 'code' => 'INF202'],
-      ['title' => 'Sécurité Informatique', 'code' => 'INF303'],
-      ['title' => 'Base de données', 'code' => 'INF404']
+      // Bachelier en Comptabilité
+      ['title' => 'Taxe sur la valeur ajoutée (TVA)', 'code' => '5CTAX'],
+      ['title' => 'Faits et institutions économiques', 'code' => '5CFI'],
+      ['title' => 'Informatique: tableur', 'code' => '5CTA'],
+
+      // Bachelier en Marketing
+      ['title' => 'Anglais en situation appliqué à l\'enseignement supérieur UE4', 'code' => '5LSA4'],
+      ['title' => 'Marketing: séminaire', 'code' => '5MAKS'],
+      ['title' => 'Organisation des entreprises et éléments demanagement', 'code' => '5IOE4']
+
+
     ];
 
     $modules = [];
@@ -158,7 +154,7 @@ class DatabaseSeeder extends Seeder
 
       $mainEmail = strtolower(
         preg_replace(
-          '/[^a-zA-Z]/',
+          '/[^a-zA-Z._-]/',
           '',
           iconv(
             'UTF-8',
@@ -170,7 +166,7 @@ class DatabaseSeeder extends Seeder
 
       $schoolEmail = strtolower(
         preg_replace(
-          '/[^a-zA-Z]/',
+          '/[^a-zA-Z._-]/',
           '',
           iconv(
             'UTF-8',
