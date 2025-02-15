@@ -130,7 +130,7 @@ class EvaluationController extends Controller
             'is_expired' => (int)$token->is_expired
           ];
         }),
-      'forms' => Form::where('is_active', true)->get()
+      'forms' => Form::all()
     ]);
   }
   /**
@@ -138,23 +138,69 @@ class EvaluationController extends Controller
    */
   public function createWithToken($token)
   {
-    $evaluationToken = EvaluationToken::where('token', $token)
-      ->with(['module', 'form.sections.questions'])
-      ->firstOrFail();
+    try {
+      Log::info('Début createWithToken', [
+        'token' => $token
+      ]);
 
-    if (!$evaluationToken->isValid()) {
-      if ($evaluationToken->isExpired()) {
-        return back()->with('error', 'Ce lien d\'évaluation a expiré.');
+      $evaluationToken = EvaluationToken::where('token', $token)
+        ->with(['module', 'form' => function ($query) {
+          $query->withTrashed();
+        }, 'form.sections.questions'])
+        ->firstOrFail();
+
+      Log::info('Token trouvé', [
+        'token_data' => [
+          'id' => $evaluationToken->id,
+          'module_id' => $evaluationToken->module_id,
+          'form_id' => $evaluationToken->form_id,
+          'student_email' => $evaluationToken->student_email,
+          'expires_at' => $evaluationToken->expires_at,
+          'is_used' => $evaluationToken->is_used
+        ]
+      ]);
+
+      if (!$evaluationToken->isValid()) {
+        Log::warning('Token invalide', [
+          'token' => $token,
+          'is_used' => $evaluationToken->is_used,
+          'expires_at' => $evaluationToken->expires_at
+        ]);
+
+        if ($evaluationToken->isExpired()) {
+          Log::warning('Token expiré', [
+            'token' => $token,
+            'expires_at' => $evaluationToken->expires_at
+          ]);
+          return back()->with('error', 'Ce lien d\'évaluation a expiré.');
+        }
+
+        Log::warning('Token déjà utilisé', [
+          'token' => $token,
+          'used_at' => $evaluationToken->used_at
+        ]);
+        return back()->with('error', 'Ce lien d\'évaluation a déjà été utilisé.');
       }
-      return back()->with('error', 'Ce lien d\'évaluation a déjà été utilisé.');
-    }
 
-    return Inertia::render('Evaluations/CreateWithToken', [
-      'token' => $token,
-      'module' => $evaluationToken->module,
-      'form' => $evaluationToken->form,
-      'expires_at' => $evaluationToken->expires_at
-    ]);
+      Log::info('Rendu de la page d\'évaluation', [
+        'module_id' => $evaluationToken->module_id,
+        'form_id' => $evaluationToken->form_id
+      ]);
+
+      return Inertia::render('Evaluations/CreateWithToken', [
+        'token' => $token,
+        'module' => $evaluationToken->module,
+        'form' => $evaluationToken->form,
+        'expires_at' => $evaluationToken->expires_at
+      ]);
+    } catch (\Exception $e) {
+      Log::error('Erreur dans createWithToken', [
+        'token' => $token,
+        'error' => $e->getMessage(),
+        'trace' => $e->getTraceAsString()
+      ]);
+      return back()->with('error', 'Une erreur est survenue lors du chargement de l\'évaluation.');
+    }
   }
 
   /**
@@ -168,7 +214,9 @@ class EvaluationController extends Controller
     ]);
 
     $evaluationToken = EvaluationToken::where('token', $token)
-      ->with(['form', 'module'])
+      ->with(['form' => function ($query) {
+        $query->withTrashed();
+      }, 'module'])
       ->firstOrFail();
 
     Log::info('Token trouvé', [
@@ -304,8 +352,8 @@ class EvaluationController extends Controller
         ->whereDate('created_at', $searchDate)
         ->first();
 
-      // Récupérer le formulaire avec ses questions
-      $form = Form::with('sections.questions')
+      $form = Form::withTrashed()
+        ->with('sections.questions')
         ->findOrFail($firstToken->form_id);
 
       // Créer un mapping des IDs de questions vers leurs énoncés
@@ -470,7 +518,6 @@ class EvaluationController extends Controller
     try {
       $searchDate = \Carbon\Carbon::parse($date)->format('Y-m-d');
 
-      // Récupérer les données comme dans showResponses
       $firstToken = EvaluationToken::where('module_id', $moduleId)
         ->where('class_id', $classId)
         ->whereDate('created_at', $searchDate)
@@ -480,8 +527,8 @@ class EvaluationController extends Controller
         return response()->json(['error' => 'Aucune donnée trouvée'], 404);
       }
 
-      // Récupérer le formulaire avec ses questions
-      $form = Form::with('sections.questions')
+      $form = Form::withTrashed()
+        ->with('sections.questions')
         ->findOrFail($firstToken->form_id);
 
       // Créer le mapping des questions
