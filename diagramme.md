@@ -10,7 +10,7 @@ class Module {
 -code: string
 -description: text
 -professor_id: bigint
--timestamps()
++timestamps()
 +professor()
 +evaluations()
 +classes()
@@ -18,29 +18,29 @@ class Module {
 }
 
     class Professor {
-      +id: bigint
-      +first_name: string
-      +last_name: string
-      +email: string
-      +school_email: string
-      +telephone: string
-      +adress: string
-      +birth_date: date
+      -id: bigint
+      -first_name: string
+      -last_name: string
+      -email: string
+      -school_email: string
+      -telephone: string
+      -adress: string
+      -birth_date: date
       +timestamps()
       +modules()
     }
 
     class Student {
-      +id: bigint
-      +first_name: string
-      +last_name: string
-      +email: string
-      +school_email: string
-      +telephone: string
-      +birth_date: date
-      +student_id: string
-      +academic_year: string
-      +status: string
+      -id: bigint
+      -first_name: string
+      -last_name: string
+      -email: string
+      -school_email: string
+      -telephone: string
+      -birth_date: date
+      -student_id: string
+      -academic_year: string
+      -status: string
       +timestamps()
       +classes()
       +courseEnrollments()
@@ -48,20 +48,20 @@ class Module {
     }
 
     class ClassGroup {
-      +id: bigint
-      +name: string
+      -id: bigint
+      -name: string
       +timestamps()
       +students()
       +modules()
     }
 
     class CourseEnrollment {
-      +id: bigint
-      +student_id: bigint
-      +module_id: bigint
-      +class_id: bigint
-      +start_date: date
-      +end_date: date
+      -id: bigint
+      -student_id: bigint
+      -module_id: bigint
+      -class_id: bigint
+      -start_date: date
+      -end_date: date
       +timestamps()
       +student()
       +module()
@@ -69,15 +69,15 @@ class Module {
     }
 
     class EvaluationToken {
-      +id: bigint
-      +token: string
-      +module_id: bigint
-      +student_email: string
-      +class_id: bigint
-      +form_id: bigint
-      +expires_at: datetime
-      +is_used: boolean
-      +used_at: timestamp
+      -id: bigint
+      -token: string
+      -module_id: bigint
+      -student_email: string
+      -class_id: bigint
+      -form_id: bigint
+      -expires_at: datetime
+      -is_used: boolean
+      -used_at: timestamp
       +timestamps()
       +module()
       +class()
