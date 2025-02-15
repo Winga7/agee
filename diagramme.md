@@ -5,12 +5,12 @@ Voici le diagramme de classe de notre projet
 ```mermaid
 classDiagram
 class Module {
-+id: bigint
-+title: string
-+code: string
-+description: text
-+professor_id: bigint
-+timestamps()
+-id: bigint
+-title: string
+-code: string
+-description: text
+-professor_id: bigint
+-timestamps()
 +professor()
 +evaluations()
 +classes()
