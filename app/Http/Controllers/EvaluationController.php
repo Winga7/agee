@@ -319,7 +319,7 @@ class EvaluationController extends Controller
           'module_id' => $module->id,
           'student_email' => $emailToUse,
           'class_id' => $class->id,
-          'form_id' => $request->form_id, // Ajoutez cette ligne
+          'form_id' => $request->form_id,
           'expires_at' => now()->addDays(7),
           'is_used' => false
         ]);
