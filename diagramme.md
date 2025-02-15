@@ -1,3 +1,8 @@
+# Diagramme UML
+
+Voici le diagramme de classe de notre projet
+
+```mermaid
 classDiagram
 class Module {
 +id: bigint
